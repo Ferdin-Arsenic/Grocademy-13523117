@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  username  String   @unique
+  firstName String
+  lastName  String
+  password  String
+  balance   Float    @default(0)
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id             String    @id @default(uuid())
+  title          String
+  description    String
+  instructor     String
+  topics         String[]
+  price          Float
+  thumbnailImage String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  modules        Module[]
+}
+
+model Module {
+  id           String  @id @default(uuid())
+  title        String
+  description  String
+  pdfContent   String?
+  videoContent String?
+  order        Int
+  course       Course  @relation(fields: [courseId], references: [id])
+  courseId     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([courseId, order]) // 'order' harus unik untuk setiap course
+}
