@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCourseDto } from './dto/create-course.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
 
 @Injectable()
 export class CoursesService {
@@ -14,5 +15,26 @@ export class CoursesService {
     return this.prisma.course.findMany();
   }
 
-  // ... Tambahkan juga fungsi findOne(id), update(id), dan remove(id) nanti
+  async findOne(id: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+    });
+    if (!course) {
+      throw new Error(`Course with ID ${id} not found`);
+    }
+    return course;
+  }
+
+  update(id: string, updateCourseDto: UpdateCourseDto) {
+    return this.prisma.course.update({
+      where: { id },
+      data: updateCourseDto,
+    });
+  }
+
+  remove(id: string) {
+    return this.prisma.course.delete({
+      where: { id },
+    });
+  }
 }

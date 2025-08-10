@@ -8,7 +8,7 @@ services:
       - DATABASE_URL=postgresql://user:password@db:5432/grocademydb?schema=public
     depends_on:
       db:
-        condition: service_healthy # <-- PERUBAHAN DI SINI
+        condition: service_healthy
 
   db:
     image: postgres:13
@@ -21,7 +21,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
-    healthcheck: # <-- BAGIAN BARU DI SINI
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user -d grocademydb"]
       interval: 5s
       timeout: 5s
