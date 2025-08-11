@@ -1,2 +1,15 @@
 node_modules
 npm-debug.log
+dist
+coverage
+.env
+.env.local
+.env.test
+.git
+.gitignore
+README.md
+.eslintrc.js
+.prettierrc
+docker-compose.yml
+Dockerfile
+.dockerignore
