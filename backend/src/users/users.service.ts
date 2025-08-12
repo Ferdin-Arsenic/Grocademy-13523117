@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AddBalanceDto } from './dto/add-balance.dto';
 import * as bcrypt from 'bcrypt';
 import { Prisma } from '@prisma/client';
 
@@ -12,7 +13,6 @@ import { Prisma } from '@prisma/client';
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  // READ ALL (dengan pencarian dan pagination)
   async findAll(query: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
@@ -54,7 +54,6 @@ export class UsersService {
     };
   }
 
-  // READ ONE
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -75,7 +74,6 @@ export class UsersService {
     return user;
   }
 
-  // UPDATE
   async update(id: string, updateUserDto: UpdateUserDto) {
     const user = await this.findOne(id); 
     if (user.role === 'admin') {
@@ -92,12 +90,29 @@ export class UsersService {
     });
   }
 
-  // DELETE
   async remove(id: string) {
-    const user = await this.findOne(id); // Cek apakah user ada
+    const user = await this.findOne(id);
     if (user.role === 'admin') {
       throw new BadRequestException('Admin account cannot be deleted');
     }
     return this.prisma.user.delete({ where: { id } });
+  }
+
+  async addBalance(id: string, addBalanceDto: AddBalanceDto) {
+    await this.findOne(id);
+    const updatedUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        balance: {
+          increment: addBalanceDto.amount,
+        },
+      },
+      select: {
+        id: true,
+        username: true,
+        balance: true,
+      },
+    });
+    return updatedUser
   }
 }

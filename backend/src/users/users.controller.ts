@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Body,
   Patch,
   Param,
@@ -15,10 +16,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
+import { AddBalanceDto } from './dto/add-balance.dto';
 
 @Controller('users')
-@UseGuards(JwtAuthGuard, RolesGuard) // Terapkan guard ke semua endpoint
-@Roles('admin') // Hanya admin yang bisa mengakses semua endpoint di controller ini
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -34,6 +36,11 @@ export class UsersController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
+  }
+
+  @Post(':id/balance')
+  addBalance(@Param('id') id: string, @Body() addBalanceDto: AddBalanceDto) {
+    return this.usersService.addBalance(id, addBalanceDto);
   }
 
   @Patch(':id')

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
@@ -6,7 +6,7 @@ import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 
-@Controller('courses') // Endpoint akan menjadi /courses
+@Controller('courses') 
 @UseGuards(JwtAuthGuard, RolesGuard) 
 export class CoursesController {
   constructor(private readonly coursesService: CoursesService) {}
@@ -18,8 +18,12 @@ export class CoursesController {
   }
 
   @Get()
-  findAll() {
-    return this.coursesService.findAll();
+  findAll(
+    @Query('q') query?: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(15), ParseIntPipe) limit?: number,
+  ) {
+    return this.coursesService.findAll(query, page, limit);
   }
 
   @Get(':id')

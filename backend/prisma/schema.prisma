@@ -19,6 +19,7 @@ model User {
   role      String   @default("user")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  purchasedCourses UserCourse[]
 }
 
 model Course {
@@ -32,6 +33,7 @@ model Course {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   modules        Module[]
+  purchasedBy UserCourse[]
 }
 
 model Module {
@@ -47,4 +49,14 @@ model Module {
   updatedAt    DateTime @updatedAt
 
   @@unique([courseId, order]) // 'order' harus unik untuk setiap course
+}
+
+model UserCourse {
+  userId   String
+  courseId String
+  user     User     @relation(fields: [userId], references: [id])
+  course   Course   @relation(fields: [courseId], references: [id])
+  purchasedAt DateTime @default(now())
+
+  @@id([userId, courseId])
 }
