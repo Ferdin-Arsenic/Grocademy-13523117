@@ -20,6 +20,7 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   purchasedCourses UserCourse[]
+  moduleCompletions UserModuleCompletion[]
 }
 
 model Course {
@@ -47,8 +48,9 @@ model Module {
   courseId     String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+  completedBy UserModuleCompletion[]
 
-  @@unique([courseId, order]) // 'order' harus unik untuk setiap course
+  @@unique([courseId, order])
 }
 
 model UserCourse {
@@ -59,4 +61,14 @@ model UserCourse {
   purchasedAt DateTime @default(now())
 
   @@id([userId, courseId])
+}
+
+model UserModuleCompletion {
+  userId    String
+  moduleId  String
+  user      User     @relation(fields: [userId], references: [id])
+  module    Module   @relation(fields: [moduleId], references: [id])
+  completedAt DateTime @default(now())
+
+  @@id([userId, moduleId])
 }

@@ -1,10 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, DefaultValuePipe, ParseIntPipe, Req } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import type { Request } from 'express';
 
 @Controller('courses') 
 @UseGuards(JwtAuthGuard, RolesGuard) 
@@ -26,9 +27,30 @@ export class CoursesController {
     return this.coursesService.findAll(query, page, limit);
   }
 
+  @Get(':id/modules')
+  @UseGuards(JwtAuthGuard)
+  findModulesForUser(@Param('id') id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.coursesService.findModulesForUser(id, user.id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id);
+  }
+
+  @Post(':id/buy')
+  @UseGuards(JwtAuthGuard)
+  buyCourse(@Param('id') id: string, @Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.coursesService.buyCourse(id, user.id);
+  }
+
+  @Get('user/my-courses')
+  @UseGuards(JwtAuthGuard)
+  findMyCourses(@Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.coursesService.findMyCourses(user.id);
   }
 
   @Patch(':id')
