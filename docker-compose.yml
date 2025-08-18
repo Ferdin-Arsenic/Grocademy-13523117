@@ -11,6 +11,7 @@ services:
       - /usr/src/app/node_modules
     depends_on:
       - db
+    command: ["./entrypoint.sh", "npm", "run", "start:dev"]
 
   db:
     image: postgres:13

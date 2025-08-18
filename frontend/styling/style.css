@@ -1,0 +1,250 @@
+/* Colors */
+:root {
+  --banana-yellow: #fbbf24;
+  --overall-blue: #1e40af;
+  --golden-banana: #f59e0b;
+  --cream-banana: #fffbeb;
+  --light-banana: #fef3c7;
+  --soft-overall: #dbeafe;
+  --minion-blue: #bfdbfe;
+  --goggle-black: #374151;
+  --gray-minion: #6b7280;
+  --success-green: #10b981;
+  --danger-red: #ef4444;
+  --purple-fun: #8b5cf6;
+  --border-gray: #e5e7eb;
+  --pure-white: #ffffff;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+body.login-page {
+  background-color: var(--overall-blue);
+}
+
+body.register-page {
+  background-color: var(--banana-yellow);
+}
+
+.auth-container {
+  background: var(--pure-white);
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  position: relative;
+}
+
+.auth-container .logo {
+  width: 80px;
+  height: auto;
+  margin: 0 auto 20px auto;
+  display: block;
+  object-fit: contain;
+}
+
+.auth-container h1 {
+  color: var(--overall-blue);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.auth-container p {
+  color: var(--overall-blue);
+  margin-bottom: 32px;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.register-page .auth-container h1 {
+  color: var(--golden-banana);
+}
+
+.register-page .auth-container p {
+  color: var(--golden-banana);
+}
+
+form {
+  text-align: left;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.form-group label {
+  display: block;
+  color: var(--golden-banana);
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.login-page .form-group label {
+  color: var(--overall-blue);
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--border-gray);
+  border-radius: 8px;
+  box-sizing: border-box;
+  font-size: 14px;
+  background-color: #f8f9fa;
+  color: var(--goggle-black);
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  background-color: #e9ecef;
+  border-color: var(--golden-banana);
+}
+
+.login-page .form-group input:focus {
+  border-color: var(--overall-blue);
+}
+
+.form-group input::placeholder {
+  color: var(--gray-minion);
+  opacity: 0.7;
+  font-size: 14px;
+}
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.btn {
+  width: 100%;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.2s ease;
+}
+
+.btn-primary {
+  background-color: var(--overall-blue);
+  color: var(--pure-white);
+}
+
+.register-page .btn-primary {
+  background-color: var(--golden-banana);
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.help-link {
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--goggle-black);
+  text-align: center;
+}
+
+.help-link a {
+  color: var(--overall-blue);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.login-page .help-link a {
+  color: var(--golden-banana);
+}
+
+.help-link a:hover {
+  text-decoration: underline;
+}
+
+#message {
+  margin-top: 16px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  display: none;
+}
+
+#message.show {
+  display: block;
+}
+
+#message.success {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: var(--success-green);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+#message.error {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger-red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 16px;
+  }
+  
+  .auth-container {
+    padding: 32px 24px;
+    border-radius: 12px;
+    max-width: 350px;
+  }
+  
+  .auth-container h1 {
+    font-size: 22px;
+  }
+  
+  .auth-container .logo {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .form-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .form-group input {
+    padding: 12px 14px;
+  }
+  
+  .btn {
+    padding: 12px 20px;
+  }
+}

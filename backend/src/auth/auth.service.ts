@@ -16,15 +16,18 @@ export class AuthService {
   async register(registerUserDto: RegisterUserDto) {
     const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
 
-    try {
-      const user = await this.prisma.user.create({
+      try {
+        const user = await this.prisma.user.create({
         data: {
           ...registerUserDto,
           password: hashedPassword,
         },
       });
-      const { password, ...result } = user;
-      return result;
+
+      const payload = { sub: user.id, username: user.username, role: user.role };
+      return {
+        accessToken: await this.jwtService.signAsync(payload),
+      };
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ConflictException('Username or email already exists');
