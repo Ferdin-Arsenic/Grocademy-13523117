@@ -1,15 +1,18 @@
+# Gunakan base image yang stabil
 FROM node:20-alpine
 
+# Tetapkan direktori kerja di dalam container
 WORKDIR /usr/src/app
 
-# Copy package files first to leverage Docker cache
+# Salin package.json dan package-lock.json terlebih dahulu
+# Ini memanfaatkan Docker layer caching
 COPY package*.json ./
 
-# Install all dependencies, including devDependencies
+# Instal semua dependensi di dalam container
 RUN npm install
 
-# Copy the rest of your app's source code
+# Salin sisa kode sumber aplikasi Anda
 COPY . .
 
-# The command to run the app will be handled by docker-compose.yml
+# Perintah CMD Anda sudah benar, karena di-handle oleh docker-compose
 CMD ["npm", "run", "start:dev"]

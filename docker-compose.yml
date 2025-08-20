@@ -9,6 +9,7 @@ services:
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
+      - uploads_data:/usr/src/app/public/uploads
     depends_on:
       - db
     command: ["./entrypoint.sh", "npm", "run", "start:dev"]
@@ -27,3 +28,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

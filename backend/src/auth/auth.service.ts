@@ -17,12 +17,16 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
 
       try {
+        const { firstName, lastName, email, username } = registerUserDto; // Ambil hanya field yang dibutuhkan
         const user = await this.prisma.user.create({
-        data: {
-          ...registerUserDto,
-          password: hashedPassword,
-        },
-      });
+          data: {
+            firstName,
+            lastName,
+            email,
+            username,
+            password: hashedPassword, // Gunakan password yang sudah di-hash
+          },
+        });
 
       const payload = { sub: user.id, username: user.username, role: user.role };
       return {

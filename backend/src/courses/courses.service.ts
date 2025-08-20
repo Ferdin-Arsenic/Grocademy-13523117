@@ -9,12 +9,25 @@ import { NotFoundException, BadRequestException, ForbiddenException } from '@nes
 export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
-  create(createCourseDto: CreateCourseDto) {
-    return this.prisma.course.create({ data: createCourseDto });
+  create(createCourseDto: CreateCourseDto, filePath: string | null) {
+    return this.prisma.course.create({
+      data: {
+        ...createCourseDto,
+        price: Number(createCourseDto.price), // Pastikan harga adalah angka
+        thumbnailImage: filePath, // Simpan path file di sini
+      },
+    });
   }
 
-  async findAll(query?: string, page: number = 1, limit: number = 15) {
+  async findAll(
+    query?: string,
+    page: number = 1,
+    limit: number = 15,
+    sortBy: string = 'createdAt', // Default sort by
+    sortOrder: 'asc' | 'desc' = 'desc', // Default sort order
+  ) {
     const skip = (page - 1) * limit;
+
     const whereCondition: Prisma.CourseWhereInput = query
       ? {
           OR: [
@@ -25,10 +38,16 @@ export class CoursesService {
         }
       : {};
 
+    // Logika untuk sorting
+    const orderBy = {
+      [sortBy]: sortOrder,
+    };
+
     const courses = await this.prisma.course.findMany({
       where: whereCondition,
       skip,
       take: limit,
+      orderBy, // <-- Terapkan sorting di sini
     });
 
     const totalItems = await this.prisma.course.count({ where: whereCondition });
@@ -81,9 +100,17 @@ export class CoursesService {
   async findOne(id: string) {
     const course = await this.prisma.course.findUnique({
       where: { id },
+      include: {
+        modules: {
+          orderBy: {
+            order: 'asc',
+          },
+        },
+      },
     });
+
     if (!course) {
-      throw new Error(`Course with ID ${id} not found`);
+      throw new NotFoundException(`Course with ID ${id} not found`);
     }
     return course;
   }
