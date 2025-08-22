@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grocademy - Browse Courses</title>
+    <title>Grocademy - Bookmarks</title>
     <link rel="stylesheet" href="../styling/style.css">
 </head>
-<body class="browse-page">
+<body class="bookmarks-page">
     <div class="app-layout">
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -19,7 +19,7 @@
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <div class="nav-section-title">Navigation</div>
-                    <a href="#" class="nav-item active">
+                    <a href="browse-courses.html" class="nav-item ">
                         <div class="nav-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe-icon lucide-globe"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
                         </div>
@@ -34,7 +34,7 @@
                         </div>
                         My Courses
                     </a>
-                    <a href="bookmarks.html" class="nav-item">
+                    <a href="#bookmarks.html" class="nav-item active">
                         <div class="nav-icon">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bookmark-icon lucide-bookmark"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
                         </div>
@@ -63,7 +63,7 @@
             </button>
             <header class="main-header">
                 <div class="breadcrumb">
-                    <span>Homepage</span>
+                    <span>Homepage</span> / <span class="active">Bookmarks</span>
                 </div>
                 <div id="user-info" class="user-greeting" style="display: none;">
                     Hello there, <span id="user-name"></span>!
@@ -72,12 +72,8 @@
 
             <div class="page-title-header">
                 <section class="browse-section">
-                    <h1 class="browse-title">Browse Course</h1>
-                    <p class="browse-subtitle">Choose new courses and start learning today!</p>
-
-                    <a href="bookmarks.html" class="see-bookmarks-link">
-                        <i class="fas fa-bookmark"></i> See Bookmarks
-                    </a>
+                    <h1 class="browse-title">Bookmarks</h1>
+                    <p class="browse-subtitle">Ready to make a decision?</p>
                 </section>
 
                 <div id="user-balance" class="balance-display" style="display: none;">

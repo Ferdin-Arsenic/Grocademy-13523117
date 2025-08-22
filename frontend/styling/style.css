@@ -271,10 +271,6 @@ form {
     overflow: hidden;
 }
 
-.sidebar.collapsed #sidebar-toggle {
-    right: -20px;
-}
-
 .main-header {
     display: flex;
     justify-content: flex-end;
@@ -463,6 +459,7 @@ form {
     color: var(--overall-blue);
 }
 
+body.bookmarks-page,
 body.browse-page,
 body.my-courses-page {
     display: block;
@@ -475,10 +472,6 @@ body.my-courses-page {
     padding-left: 0;
     padding-right: 0;
     overflow: hidden;
-}
-
-.sidebar.collapsed #sidebar-toggle {
-    right: -20px;
 }
 
 .logo-placeholder {
@@ -761,6 +754,7 @@ body.my-courses-page {
 }
 
 .course-card {
+    position: relative; /* Properti ini ditambahkan */
     background-color: var(--pure-white);
     border: 2px solid var(--banana-yellow);
     border-radius: 12px;
@@ -1004,6 +998,28 @@ body.my-courses-page {
     .browse-title {
         font-size: 24px;
     }
+
+    .bookmark-btn {
+        width: 32px;
+        height: 32px;
+        top: 8px;
+        right: 8px;
+    }
+    
+    .bookmark-btn i {
+        font-size: 14px;
+    }
+    
+    .modal-bookmark-btn {
+        width: 36px;
+        height: 36px;
+        top: 15px;
+        left: 15px;
+    }
+    
+    .modal-bookmark-btn i {
+        font-size: 16px;
+    }
 }
 
 #sidebar-toggle:hover {
@@ -1089,7 +1105,7 @@ body.my-courses-page {
 
 #sidebar-toggle {
     position: fixed;
-    top: 24px;
+    top: 0px;
     left: 280px;
     width: 40px;
     height: 40px;
@@ -1137,7 +1153,7 @@ body.my-courses-page {
     position: fixed;
     top: 0;
     left: 0;
-    background-color: var(--overall-blue);
+    background: linear-gradient(160deg, var(--title-blue), var(--overall-blue));
     transition: left 0.3s ease-in-out;
     z-index: 200;
     display: flex;
@@ -1221,9 +1237,11 @@ body.my-courses-page {
 .modal-content {
     background: var(--pure-white);
     border-radius: 16px;
-    width: 90%;
+    width: 900px; 
     max-width: 900px;
-    max-height: 90vh;
+
+    height: 500px; 
+    
     overflow: hidden;
     position: relative;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -1247,7 +1265,7 @@ body.my-courses-page {
 
 .modal-header {
     display: flex;
-    max-height: 90vh; 
+    height: 100%; 
 }
 
 .modal-course-image {
@@ -1264,8 +1282,8 @@ body.my-courses-page {
     flex-direction: column;
     justify-content: center;
     background: var(--cream-banana);
-
-    overflow-y: auto;
+    
+    overflow-y: auto; 
 }
 
 .modal-course-title {
@@ -1650,7 +1668,7 @@ body.course-module-page {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background-color: var(--success-green);
+    background-color: var(--banana-yellow);
     color: var(--pure-white);
     border: none;
     padding: 12px 20px;
@@ -1935,4 +1953,89 @@ body.course-module-page {
     padding: 48px 0;
     color: var(--gray-minion);
     font-size: 16px;
+}
+
+.bookmark-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: var(--gray-minion); /* Warna diubah agar lebih terlihat */
+    transition: color 0.2s, transform 0.2s;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.bookmark-btn:hover {
+    transform: scale(1.2);
+}
+.bookmark-btn.bookmarked {
+    color: var(--banana-yellow); /* Warna saat aktif */
+}
+
+/* Penyesuaian pada kartu kursus agar tombol tidak tumpang tindih */
+.course-card .course-image {
+    position: relative;
+}
+
+.see-bookmarks-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--pure-white);
+    border: 1px solid var(--border-gray);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    color: var(--title-blue);
+    text-decoration: none;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.see-bookmarks-link:hover {
+    border-color: var(--overall-blue);
+    background-color: var(--title-blue);
+    transform: translateY(-1px);
+    color: white;
+}
+
+.modal-bookmark-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--overall-blue);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.modal-bookmark-btn:hover {
+    background: var(--title-blue);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.modal-bookmark-btn i {
+    color: white;
+    font-size: 18px;
+    transition: all 0.2s ease;
+}
+
+.modal-bookmark-btn.bookmarked {
+    background: var(--title-blue);
+}
+
+.modal-bookmark-btn.bookmarked i {
+    color: white;
 }

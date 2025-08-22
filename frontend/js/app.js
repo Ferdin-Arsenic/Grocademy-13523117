@@ -2,6 +2,7 @@ const API_BASE_URL = 'http://localhost:3000';
 
 let currentSortBy = 'title';
 let currentSortOrder = 'desc';
+let userBookmarks = new Set();
 
 const registerForm = document.getElementById('registerForm');
 const loginForm = document.getElementById('loginForm');
@@ -89,11 +90,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.body.classList.contains('course-module-page')) {
         setupCourseModulePage();
     }
+    if (document.body.classList.contains('bookmarks-page')) {
+        setupBookmarksPage();
+    }
 });
 
 function setupBrowsePage() {
     loadUserData();
     loadCourses();
+    loadUserBookmarks();
     initializeCourseModal();
 
     const searchButton = document.getElementById('search-button');
@@ -136,7 +141,12 @@ function setupSortingButtons() {
             const searchBox = document.getElementById('search-box');
             const currentQuery = searchBox ? searchBox.value : '';
             
-            loadCourses(1, 10, currentQuery);
+            // TAMBAHKAN KONDISI INI
+            if (document.body.classList.contains('bookmarks-page')) {
+                loadBookmarks(1, 10, currentQuery);
+            } else {
+                loadCourses(1, 10, currentQuery);
+            }
         });
     }
 
@@ -150,7 +160,12 @@ function setupSortingButtons() {
             const searchBox = document.getElementById('search-box');
             const currentQuery = searchBox ? searchBox.value : '';
             
-            loadCourses(1, 10, currentQuery);
+            // TAMBAHKAN KONDISI INI
+            if (document.body.classList.contains('bookmarks-page')) {
+                loadBookmarks(1, 10, currentQuery);
+            } else {
+                loadCourses(1, 10, currentQuery);
+            }
         });
     }
 
@@ -166,7 +181,12 @@ function setupSortingButtons() {
             const searchBox = document.getElementById('search-box');
             const currentQuery = searchBox ? searchBox.value : '';
             
-            loadCourses(1, 10, currentQuery);
+            // TAMBAHKAN KONDISI INI
+            if (document.body.classList.contains('bookmarks-page')) {
+                loadBookmarks(1, 10, currentQuery);
+            } else {
+                loadCourses(1, 10, currentQuery);
+            }
         });
     }
 }
@@ -235,6 +255,39 @@ function setupMyCoursesPage() {
         });
     }
 }
+
+function setupBookmarksPage() {
+    loadUserData();
+    loadUserBookmarks(); // TAMBAHKAN INI
+    loadBookmarks(); // GANTI loadCourses() dengan ini
+    initializeCourseModal();
+
+    const searchButton = document.getElementById('search-button');
+    const searchBox = document.getElementById('search-box');
+
+    if (searchButton && searchBox) {
+        searchButton.addEventListener('click', () => {
+            loadBookmarks(1, 10, searchBox.value); // GANTI dengan loadBookmarks
+        });
+        
+        searchBox.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                loadBookmarks(1, 10, searchBox.value); // GANTI dengan loadBookmarks
+            }
+        });
+    }
+
+    const logoutButton = document.getElementById('logout-button');
+    if(logoutButton) {
+        logoutButton.addEventListener('click', () => {
+            localStorage.removeItem('accessToken');
+            window.location.href = 'login.html';
+        });
+    }
+
+    setupSortingButtons();
+}
+
 
 function setupCourseModulePage() {
     loadUserDataWithoutRedirect();
@@ -336,6 +389,108 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
         }
     } catch (error) {
         courseListContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+    }
+}
+
+async function loadBookmarks(page = 1, limit = 10, query = '') {
+    const courseListContainer = document.getElementById('course-list-container');
+    const token = localStorage.getItem('accessToken');
+    if (!courseListContainer || !token) return;
+
+    courseListContainer.innerHTML = '<p>Loading bookmarked courses...</p>';
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/bookmarks`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) throw new Error('Failed to load bookmarks');
+
+        let courses = await response.json();
+
+        // Filter by search query
+        if (query) {
+            const lowercasedQuery = query.toLowerCase();
+            courses = courses.filter(course => 
+                course.title.toLowerCase().includes(lowercasedQuery) ||
+                course.instructor.toLowerCase().includes(lowercasedQuery) ||
+                (course.topics && course.topics.some(topic => topic.toLowerCase().includes(lowercasedQuery)))
+            );
+        }
+
+        // Sort courses
+        if (currentSortBy === 'price') {
+            courses.sort((a, b) => {
+                return currentSortOrder === 'asc' 
+                    ? a.price - b.price 
+                    : b.price - a.price;
+            });
+        } else if (currentSortBy === 'title') {
+            courses.sort((a, b) => {
+                return currentSortOrder === 'asc' 
+                    ? a.title.localeCompare(b.title) 
+                    : b.title.localeCompare(a.title);
+            });
+        }
+        
+        courseListContainer.innerHTML = ''; 
+        
+        if (courses && courses.length > 0) {
+            courses.forEach(course => {
+                let imageUrl = '../assets/placeholder.jpeg'; 
+                if (course.thumbnailImage) {
+                    const cleanPath = course.thumbnailImage.replace(/^\/+/, '');
+                    imageUrl = `${API_BASE_URL}/${cleanPath}`;
+                }
+
+                const courseCardHTML = `
+                    <div class="course-card" data-course-id="${course.id}">
+                        <div class="course-image">
+                            <img src="${imageUrl}" alt="${course.title}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="handleImageError(this)">
+                        </div>
+                        <div class="course-content">
+                            <h3 class="course-title">${course.title}</h3>
+                            <p class="course-instructor">by ${course.instructor}</p>
+                            <div class="course-footer">
+                                <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                        <button class="bookmark-btn bookmarked" onclick="toggleBookmark('${course.id}', this)" title="Remove from bookmarks">
+                            <i class="fas fa-bookmark"></i>
+                        </button>
+                    </div>
+                `;
+                courseListContainer.insertAdjacentHTML('beforeend', courseCardHTML);
+            });
+
+            setTimeout(() => {
+                addCourseCardListeners();
+            }, 100);
+        } else {
+            courseListContainer.innerHTML = '<p class="no-courses-message">No bookmarked courses found.</p>';
+        }
+
+    } catch (error) {
+        courseListContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+    }
+}
+
+
+async function loadUserBookmarks() {
+    const token = localStorage.getItem('accessToken');
+    if (!token) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/bookmarks`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.ok) {
+            const bookmarks = await response.json();
+            userBookmarks = new Set(bookmarks.map(bookmark => bookmark.id));
+        }
+    } catch (error) {
+        console.error('Failed to load user bookmarks:', error);
     }
 }
 
@@ -460,6 +615,15 @@ async function loadCourses(page = 1, limit = 10, query = '') {
                     imageUrl = `${API_BASE_URL}/${cleanPath}`;
                 }
 
+                const isBookmarked = userBookmarks.has(course.id);
+                const bookmarkButtonHTML = token ? `
+                    <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
+                            onclick="toggleBookmark('${course.id}', this, event)" 
+                            title="${isBookmarked ? 'Remove from bookmarks' : 'Add to bookmarks'}">
+                        <i class="${isBookmarked ? 'fas' : 'far'} fa-bookmark"></i>
+                    </button>
+                ` : '';
+
                 const courseCardHTML = `
                     <div class="course-card" data-course-id="${course.id}">
                         <div class="course-image">
@@ -472,6 +636,7 @@ async function loadCourses(page = 1, limit = 10, query = '') {
                                 <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
+                        ${bookmarkButtonHTML}
                     </div>
                 `;
                 courseListContainer.insertAdjacentHTML('beforeend', courseCardHTML);
@@ -657,6 +822,72 @@ async function markModuleAsComplete(courseId, moduleId) {
     }
 }
 
+async function toggleBookmark(courseId, buttonElement, event) {
+    
+    const token = localStorage.getItem('accessToken');
+
+    if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+    }
+
+    if (!token) {
+        alert('You need to login to bookmark courses');
+        return;
+    }
+
+    const isCurrentlyBookmarked = userBookmarks.has(courseId);
+    const newBookmarkState = !isCurrentlyBookmarked;
+
+    if (newBookmarkState) {
+        userBookmarks.add(courseId);
+    } else {
+        userBookmarks.delete(courseId);
+    }
+
+    const cardButton = document.querySelector(`.course-card[data-course-id="${courseId}"] .bookmark-btn`);
+    const modalButton = document.querySelector('.modal-bookmark-btn');
+
+    if (cardButton) updateBookmarkButton(cardButton, newBookmarkState);
+    if (modalButton) updateBookmarkButton(modalButton, newBookmarkState);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/bookmarks/${courseId}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to toggle bookmark');
+
+        if (document.body.classList.contains('bookmarks-page') && !newBookmarkState) {
+            loadBookmarks();
+        }
+
+    } catch (error) {
+        alert('Failed to update bookmark. Please try again.');
+        if (newBookmarkState) {
+            userBookmarks.delete(courseId);
+        } else {
+            userBookmarks.add(courseId);
+        }
+        if (cardButton) updateBookmarkButton(cardButton, isCurrentlyBookmarked);
+        if (modalButton) updateBookmarkButton(modalButton, isCurrentlyBookmarked);
+    }
+}
+
+function updateBookmarkButton(button, isBookmarked) {
+    const icon = button.querySelector('i');
+    if (isBookmarked) {
+        icon.className = 'fas fa-bookmark';
+        button.classList.add('bookmarked');
+        button.title = 'Remove from bookmarks';
+    } else {
+        icon.className = 'far fa-bookmark';
+        button.classList.remove('bookmarked');
+        button.title = 'Add to bookmarks';
+    }
+}
+
 function initializeSidebarToggle() {
     const toggleBtn = document.getElementById('sidebar-toggle');
     const body = document.querySelector('body');
@@ -774,6 +1005,18 @@ async function showCourseModal(courseId) {
             buyButton.style.display = 'none';
             loginNotice.style.display = 'block';
         }
+
+        const modalBookmarkBtn = document.createElement('button');
+        modalBookmarkBtn.className = `modal-bookmark-btn ${userBookmarks.has(courseId) ? 'bookmarked' : ''}`;
+        modalBookmarkBtn.onclick = (event) => {
+            event.stopPropagation();
+            toggleBookmark(courseId, modalBookmarkBtn, event);
+        };
+        modalBookmarkBtn.innerHTML = `<i class="${userBookmarks.has(courseId) ? 'fas' : 'far'} fa-bookmark"></i>`;
+        modalBookmarkBtn.title = userBookmarks.has(courseId) ? 'Remove from bookmarks' : 'Add to bookmarks';
+
+        const closeBtn = document.getElementById('closeModal');
+        closeBtn.parentNode.insertBefore(modalBookmarkBtn, closeBtn);
 
         modal.classList.add('show');
         

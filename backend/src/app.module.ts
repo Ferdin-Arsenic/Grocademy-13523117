@@ -8,6 +8,7 @@ import { CoursesModule } from './courses/courses.module';
 import { ModulesModule } from './modules/modules.module';
 import { UsersModule } from './users/users.module';
 import { CertificateModule } from './certificate/certificate.module';
+import { BookmarksModule } from './bookmarks/bookmarks.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { CertificateModule } from './certificate/certificate.module';
     ModulesModule,
     UsersModule,
     CertificateModule,
+    BookmarksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
