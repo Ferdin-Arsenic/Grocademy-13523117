@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { CoursesController } from './courses.controller';
 import { CoursesService } from './courses.service';
-import { PrismaModule } from '../prisma/prisma.module'; // <-- TAMBAHKAN IMPORT INI
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule], // <-- TAMBAHKAN BAGIAN INI
+  imports: [PrismaModule],
   controllers: [CoursesController],
   providers: [CoursesService],
 })

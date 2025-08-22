@@ -10,8 +10,8 @@ import { JwtStrategy } from './jwt.strategy';
     PrismaModule,
     JwtModule.register({
       global: true,
-      secret: 'SECRET_KEY_YANG_SANGAT_RAHASIA', // Nanti ganti dengan environment variable
-      signOptions: { expiresIn: '60m' }, // Token berlaku selama 60 menit
+      secret: 'SECRET_KEY_YANG_SANGAT_RAHASIA',
+      signOptions: { expiresIn: '60m' },
     }),
   ],
   controllers: [AuthController],

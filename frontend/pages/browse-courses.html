@@ -8,7 +8,6 @@
 </head>
 <body class="browse-page">
     <div class="app-layout">
-        <!-- Updated Sidebar Structure -->
         <aside class="sidebar">
             <div class="sidebar-header">
                 <img src="../assets/logo.webp" alt="Grocademy Logo" class="logo">
@@ -26,13 +25,11 @@
                         </div>
                         Homepage
                     </a>
-                    <a href="#" class="nav-item">
+                    <a href="my-course.html" class="nav-item">
                         <div class="nav-icon">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
-                                <path d="M8 7h8"/>
-                                <path d="M8 11h8"/>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
                             </svg>
                         </div>
                         My Courses
@@ -60,24 +57,24 @@
             </button>
             <header class="main-header">
                 <div class="breadcrumb">
-                    </div>
-                
-                <div class="user-profile-container">
-                    <div id="user-info" class="user-greeting" style="display: none;">
-                        Hello there, <span id="user-name"></span>!
-                    </div>
-                    <div id="user-balance" class="balance-display" style="display: none;">
-                        <div class="balance-label">Your Balance :</div>
-                        <div class="balance-amount" id="balance-amount"></div>
-                    </div>
+                    <span>Homepage</span>
+                </div>
+                <div id="user-info" class="user-greeting" style="display: none;">
+                    Hello there, <span id="user-name"></span>!
                 </div>
             </header>
 
-            <!-- Browse Section -->
-            <section class="browse-section">
-                <h1 class="browse-title">Browse Course</h1>
-                <p class="browse-subtitle">Pilih kursus dan mulai belajar hari ini!</p>
-            </section>
+            <div class="page-title-header">
+                <section class="browse-section">
+                    <h1 class="browse-title">Browse Course</h1>
+                    <p class="browse-subtitle">Choose new courses and start learning today!</p>
+                </section>
+
+                <div id="user-balance" class="balance-display" style="display: none;">
+                    <div class="balance-label">Your Balance :</div>
+                    <div class="balance-amount" id="balance-amount"></div>
+                </div>
+            </div>
 
             <section class="search-section">
                 <div class="sort-buttons">
@@ -95,28 +92,24 @@
                         </button>
                 </div>
             </section>
-            
-            <!-- Course Grid -->
             <section class="course-grid" id="course-list-container">
             </section>
-
-            <!-- Pagination -->
             <nav class="pagination" id="pagination-container">
                 </nav>
         </main>
     </div>
 
-    <!-- Tambahkan sebelum closing </body> -->
     <div class="modal-overlay" id="courseModal">
         <div class="modal-content">
             <button class="close-modal" id="closeModal">&times;</button>
             
             <div class="modal-header">
                 <div class="modal-course-image" id="modalCourseImage">
-                    <!-- Course image akan dimuat di sini -->
                 </div>
                 <div class="modal-course-info">
                     <h2 class="modal-course-title" id="modalCourseTitle"></h2>
+                    <div class="topics-container" id="modalCourseTopics">
+                        </div>
                     <p class="modal-instructor">Instructor: <span id="modalCourseInstructor"></span></p>
                     <p class="modal-description" id="modalCourseDescription"></p>
                     <div class="modal-meta">
@@ -131,7 +124,33 @@
         </div>
     </div>
 
-    <!-- Add Font Awesome for icons -->
+    <div class="notification-overlay" id="confirmBuyModal" style="display: none;">
+        <div class="notification-content">
+            <button class="close-notification" id="closeConfirmBtn">&times;</button>
+            <div class="notification-icon yellow">
+                <i class="fas fa-question"></i>
+            </div>
+            <h2>Notification!</h2>
+            <p id="confirmBuyText">Are you sure to buy [Nama-kursus]?</p>
+            <div class="notification-buttons">
+                <button class="btn-cancel" id="cancelBuyBtn">Cancel</button>
+                <button class="btn-confirm" id="confirmBuyBtn">Yes</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification-overlay" id="successModal" style="display: none;">
+        <div class="notification-content">
+            <div class="notification-icon yellow">
+                <i class="fas fa-check"></i>
+            </div>
+            <h2>Successfully buy a new course!</h2>
+            <div class="notification-buttons">
+                <button class="btn-confirm" id="successOkBtn">OK</button>
+            </div>
+        </div>
+    </div>
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="../js/config.js"></script>
     <script src="../js/app.js"></script>

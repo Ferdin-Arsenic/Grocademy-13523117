@@ -1,18 +1,22 @@
-# Gunakan base image yang stabil
-FROM node:20-alpine
-
-# Tetapkan direktori kerja di dalam container
+# --- TAHAP 1: BUILDER ---
+# Tahap ini bertugas meng-install semua dependensi (termasuk dev) dan membangun aplikasi.
+FROM node:20-alpine AS builder
 WORKDIR /usr/src/app
 
-# Salin package.json dan package-lock.json terlebih dahulu
-# Ini memanfaatkan Docker layer caching
 COPY package*.json ./
-
-# Instal semua dependensi di dalam container
 RUN npm install
 
-# Salin sisa kode sumber aplikasi Anda
 COPY . .
+RUN npm run build
 
-# Perintah CMD Anda sudah benar, karena di-handle oleh docker-compose
-CMD ["npm", "run", "start:dev"]
+FROM node:20-alpine
+WORKDIR /usr/src/app
+
+COPY package*.json ./
+RUN npm install --only=production
+
+COPY --from=builder /usr/src/app/dist ./dist
+COPY --from=builder /usr/src/app/prisma ./prisma
+
+EXPOSE 3000
+CMD ["npm", "run", "start:prod"]

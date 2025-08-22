@@ -1,4 +1,7 @@
-import {Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards} from '@nestjs/common';
+import {Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards, UseInterceptors, UploadedFiles,} from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import { extname } from 'path';
 import { ModulesService } from './modules.service';
 import { CreateModuleDto } from './dto/create-module.dto';
 import { UpdateModuleDto } from './dto/update-module.dto';
@@ -7,6 +10,7 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
 import type { Request } from 'express';
+import { existsSync, mkdirSync } from 'fs';
 
 @Controller('modules')
 @UseGuards(JwtAuthGuard)
@@ -16,8 +20,49 @@ export class ModulesController {
   @Post()
   @UseGuards(RolesGuard)
   @Roles('admin')
-  create(@Body() createModuleDto: CreateModuleDto) {
-    return this.modulesService.create(createModuleDto);
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'videoContent', maxCount: 1 },
+        { name: 'pdfContent', maxCount: 1 },
+      ],
+      {
+        storage: diskStorage({
+          destination: (req, file, cb) => {
+            let uploadPath = './public/uploads/';
+            
+            if (file.fieldname === 'videoContent') {
+              uploadPath += 'videos';
+            } else if (file.fieldname === 'pdfContent') {
+              uploadPath += 'pdfs';
+            }
+
+            if (!existsSync(uploadPath)) {
+              mkdirSync(uploadPath, { recursive: true });
+            }
+            cb(null, uploadPath);
+          },
+          filename: (req, file, cb) => {
+            const randomName = Array(32)
+              .fill(null)
+              .map(() => Math.round(Math.random() * 16).toString(16))
+              .join('');
+            cb(null, `${randomName}${extname(file.originalname)}`);
+          },
+        }),
+      },
+    ),
+  )
+  
+  create(
+    @Body() createModuleDto: CreateModuleDto,
+    @UploadedFiles()
+    files: {
+      videoContent?: Express.Multer.File[];
+      pdfContent?: Express.Multer.File[];
+    },
+  ) {
+    return this.modulesService.create(createModuleDto, files);
   }
 
   @Get()

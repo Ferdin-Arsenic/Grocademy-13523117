@@ -14,6 +14,7 @@
   --purple-fun: #8b5cf6;
   --border-gray: #e5e7eb;
   --pure-white: #ffffff;
+  --title-blue: #3b82f6;
 }
 
 body {
@@ -300,7 +301,7 @@ form {
 
 #search-box {
   width: 50%;
-  padding: 12px;
+  padding: 10px;
   border: 1px solid var(--border-gray);
   border-radius: 6px 0 0 6px;
 }
@@ -317,7 +318,7 @@ form {
 .search-btn {
     background-color: transparent;
     border: none;
-    padding: 0 16px;
+    padding: 0 14px;
     cursor: pointer;
     color: var(--gray-minion);
     display: flex;
@@ -338,14 +339,6 @@ form {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 24px;
-}
-
-.course-card {
-  background-color: var(--pure-white);
-  border: 1px solid var(--border-gray);
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
 .course-card-content {
@@ -411,7 +404,6 @@ form {
     margin-top: auto;
 }
 
-/* Gaya Sidebar saat disembunyikan */
 .sidebar.collapsed {
     width: 0;
     padding-left: 0;
@@ -438,22 +430,11 @@ form {
     font-weight: bold;
 }
 
-/* === KARTU KURSUS === */
 .course-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 24px;
     margin-top: 20px;
-}
-
-.course-card {
-    background-color: var(--pure-white);
-    border: 1px solid var(--border-gray);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .course-card:hover {
@@ -471,7 +452,7 @@ form {
 }
 
 .course-card-content .instructor {
-    color: var(--gray-minion);
+    color: var(--title-blue);
     font-size: 14px;
     margin-bottom: 16px;
 }
@@ -481,10 +462,11 @@ form {
     font-size: 16px;
     color: var(--overall-blue);
 }
-/* Tambahkan CSS ini ke file style.css Anda */
 
-/* Update body untuk browse page */
-body.browse-page {
+body.browse-page,
+body.my-courses-page {
+    display: block;
+    padding: 0;
     background-color: var(--cream-banana);
 }
 
@@ -499,7 +481,6 @@ body.browse-page {
     right: -20px;
 }
 
-/* Logo placeholder untuk sidebar */
 .logo-placeholder {
     width: 40px;
     height: 40px;
@@ -508,7 +489,6 @@ body.browse-page {
     flex-shrink: 0;
 }
 
-/* Navigation section styling */
 .nav-section {
     margin-bottom: 8px;
 }
@@ -523,7 +503,6 @@ body.browse-page {
     letter-spacing: 1px;
 }
 
-/* Update nav-item styling */
 .nav-item {
     display: flex;
     align-items: center;
@@ -549,7 +528,6 @@ body.browse-page {
     font-weight: 600;
 }
 
-/* Custom Icon styles with CSS shapes */
 .nav-icon {
     width: 20px;
     height: 20px;
@@ -571,19 +549,17 @@ body.browse-page {
 .nav-icon svg {
     width: 20px;
     height: 20px;
-    stroke: white; /* Icon putih untuk sidebar biru */
+    stroke: white;
     fill: none;
     stroke-width: 2;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
-/* Icon jadi hitam saat nav item active (background kuning) */
 .nav-item.active .nav-icon svg {
     stroke: var(--goggle-black);
 }
 
-/* Support untuk Lucide CDN */
 .nav-icon i[data-lucide] {
     width: 20px;
     height: 20px;
@@ -609,14 +585,12 @@ body.browse-page {
     font-size: 14px;
 }
 
-/* Update sidebar footer */
 .sidebar-footer {
     margin-top: auto;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     padding-top: 16px;
 }
 
-/* Header styling */
 .main-header {
     display: flex;
     justify-content: space-between;
@@ -624,7 +598,6 @@ body.browse-page {
     margin-bottom: 32px;
 }
 
-/* Breadcrumb */
 .breadcrumb {
     display: flex;
     align-items: center;
@@ -644,7 +617,6 @@ body.browse-page {
     color: var(--gray-minion);
 }
 
-/* User section */
 .user-section {
     display: flex;
     align-items: center;
@@ -679,13 +651,19 @@ body.browse-page {
     text-decoration: underline;
 }
 
-/* Browse section */
-.browse-section {
+.page-title-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 32px;
 }
 
+.browse-section {
+    margin-bottom: 0;
+}
+
 .browse-title {
-    color: #3b82f6;
+    color: var(--title-blue);
     font-size: 32px;
     font-weight: 700;
     margin-bottom: 8px;
@@ -699,7 +677,7 @@ body.browse-page {
 
 .search-section {
     display: flex;
-    justify-content: space-between; /* Sort buttons di kiri, search di kanan */
+    justify-content: space-between;
     align-items: center;
     gap: 16px;
     margin-bottom: 32px;
@@ -735,29 +713,28 @@ body.browse-page {
 }
 
 .search-container {
-    display: flex; /* Mengatur elemen di dalamnya (input dan button) agar berdampingan */
-    align-items: center; /* Membuat elemen sejajar secara vertikal */
+    display: flex;
+    align-items: center;
     border: 1px solid var(--border-gray);
     border-radius: 8px;
     background-color: var(--pure-white);
-    overflow: hidden; /* Ini adalah kunci untuk menyatukan border radius */
+    overflow: hidden;
     max-width: 400px;
     width: 100%;
 }
 
 .search-container:focus-within {
-    /* Memberi highlight saat container-nya fokus */
     border-color: var(--golden-banana);
     box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
 .search-input {
-    flex-grow: 1; /* Membuat input mengisi sisa ruang yang tersedia */
+    flex-grow: 1;
     padding: 12px 16px;
-    border: none; /* Hapus border dari input */
-    outline: none; /* Hapus outline saat di-klik */
+    border: none;
+    outline: none;
     font-size: 14px;
-    background-color: transparent; /* Buat background transparan */
+    background-color: transparent;
 }
 
 .search-input:focus {
@@ -776,7 +753,6 @@ body.browse-page {
     border-radius: 2px;
 }
 
-/* Update course grid */
 .course-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -784,10 +760,9 @@ body.browse-page {
     margin-bottom: 32px;
 }
 
-/* Update course card */
 .course-card {
     background-color: var(--pure-white);
-    border: 1px solid var(--border-gray);
+    border: 2px solid var(--banana-yellow);
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -800,21 +775,17 @@ body.browse-page {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
 }
 
-/* Ganti bagian .course-image di style.css dengan ini: */
-
 .course-image {
     width: 100%;
     height: 160px;
-    /* Hapus background gradient yang menutupi gambar */
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
-    background-color: #f3f4f6; /* Background abu-abu terang sebagai fallback */
+    background-color: #f3f4f6;
 }
 
-/* Style untuk gambar di dalam course-image */
 .course-image img {
     width: 100%;
     height: 100%;
@@ -822,7 +793,6 @@ body.browse-page {
     display: block;
 }
 
-/* Fallback styling jika gambar gagal dimuat */
 .course-image:empty::before {
     content: "📚 Course Image";
     color: #6b7280;
@@ -833,7 +803,6 @@ body.browse-page {
     height: 100%;
 }
 
-/* Alternatif: Jika ingin tetap ada placeholder dengan minion eyes saat gambar tidak ada */
 .course-image.no-image {
     background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
 }
@@ -871,7 +840,6 @@ body.browse-page {
     border-radius: 50%;
 }
 
-/* Minion-style placeholder */
 .minion-placeholder {
     width: 100%;
     height: 100%;
@@ -906,7 +874,6 @@ body.browse-page {
     border-radius: 50%;
 }
 
-/* Update course content */
 .course-content {
     padding: 16px;
 }
@@ -914,14 +881,14 @@ body.browse-page {
 .course-title {
     font-size: 16px;
     font-weight: 600;
-    color: var(--goggle-black);
+    color: var(--title-blue);
     margin-bottom: 4px;
     line-height: 1.4;
 }
 
 .course-instructor {
     font-size: 14px;
-    color: var(--gray-minion);
+    color: var(--goggle-blacktruct);
     margin-bottom: 12px;
 }
 
@@ -943,7 +910,6 @@ body.browse-page {
     color: var(--overall-blue);
 }
 
-/* Pagination */
 .pagination {
     display: flex;
     justify-content: center;
@@ -990,7 +956,6 @@ body.browse-page {
     }
 }
 
-/* Responsive */
 @media (max-width: 768px) {
     .sidebar {
         width: 0;
@@ -1076,14 +1041,14 @@ body.browse-page {
     background-color: var(--pure-white);
     padding: 12px 16px;
     border-radius: 12px;
-    border: 1px solid var(--border-gray);
+    border: 2px solid var(--overall-blue);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     min-width: 140px;
 }
 
 .balance-label {
     font-size: 12px;
-    color: var(--gray-minion);
+    color: var(--goggle-black);
     margin-bottom: 2px;
     font-weight: 400;
 }
@@ -1122,26 +1087,22 @@ body.browse-page {
     color: var(--gray-minion);
 }
 
-/* Tambahkan semua ini di akhir file style.css */
-
-/* --- Perbaikan Posisi & Ikon Tombol Sidebar --- */
 #sidebar-toggle {
-    position: fixed; /* Tetap di layar saat di-scroll */
-    top: 28px;
-    left: 24px;
-    width: 32px;
-    height: 32px;
+    position: fixed;
+    top: 24px;
+    left: 280px;
+    width: 40px;
+    height: 40px;
     background-color: var(--banana-yellow);
-    border: 1px solid var(--golden-banana);
-    border-radius: 6px;
+    border: none;
+    border-radius: 0 8px 8px 0;
     cursor: pointer;
     z-index: 1000;
     display: flex;
-    flex-direction: column;
-    justify-content: space-evenly;
+    justify-content: center;
     align-items: center;
-    padding: 6px;
-    transition: left 0.3s ease; /* Transisi untuk posisi */
+    transition: left 0.3s ease-in-out;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 #sidebar-toggle span {
@@ -1152,23 +1113,10 @@ body.browse-page {
     transition: all 0.3s ease;
 }
 
-/* Animasi ikon menjadi 'X' saat aktif */
-#sidebar-toggle.active span:nth-child(1) {
-    transform: translateY(6px) rotate(45deg);
-}
-#sidebar-toggle.active span:nth-child(2) {
-    opacity: 0;
-}
-#sidebar-toggle.active span:nth-child(3) {
-    transform: translateY(-6px) rotate(-45deg);
-}
-
-/* Sesuaikan konten utama saat sidebar disembunyikan */
 .main-content {
     transition: margin-left 0.3s ease;
 }
 
-/* --- Perbaikan Warna Tombol Pagination --- */
 .pagination-btn {
     border-color: var(--golden-banana);
     color: var(--golden-banana);
@@ -1178,13 +1126,11 @@ body.browse-page {
     background-color: var(--golden-banana);
     color: var(--pure-white);
 }
-/* tambahan
-/* --- Kontrol Tata Letak Utama --- */
+
 .app-layout {
     display: flex;
 }
 
-/* --- Konfigurasi Sidebar --- */
 .sidebar {
     width: 280px;
     height: 100vh;
@@ -1208,30 +1154,11 @@ body.browse-page {
     overflow-y: auto;
 }
 
-/* --- Tombol Toggle --- */
-#sidebar-toggle {
-    position: fixed;
-    top: 24px;
-    left: calc(280px + 24px);
-    width: 40px;
-    height: 40px;
-    background-color: var(--banana-yellow);
-    border: 1px solid var(--golden-banana);
-    border-radius: 8px;
-    cursor: pointer;
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    transition: left 0.3s ease-in-out;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
 .sidebar-collapsed #sidebar-toggle {
-    left: 24px;
+    left: 0px;
+    border-radius: 0 8px 8px 0;
 }
 
-/* SVG Icon untuk Toggle */
 #sidebar-toggle svg {
     width: 20px;
     height: 20px;
@@ -1246,18 +1173,18 @@ body.browse-page {
 #sidebar-toggle span {
     width: 18px;
     height: 2px;
-    background-color: var(--pure-white); /* Warna ikon putih agar kontras */
+    background-color: var(--pure-white);
     border-radius: 2px;
     transition: all 0.3s ease-in-out;
-    opacity: 1; /* Pastikan opacity selalu 1 */
+    opacity: 1;
 }
 
 .sidebar-collapsed .sidebar {
-    left: -280px; /* Geser sidebar keluar dari layar */
+    left: -280px;
 }
 
 .sidebar-collapsed .main-content {
-    margin-left: 0; /* Konten utama mengisi seluruh layar */
+    margin-left: 0;
 }
 
 .sidebar.collapsed .sidebar-header,
@@ -1273,7 +1200,6 @@ body.browse-page {
     top: 25px;
 }
 
-/* Modal Styles */
 .modal-overlay {
     display: none;
     position: fixed;
@@ -1301,6 +1227,7 @@ body.browse-page {
     overflow: hidden;
     position: relative;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    border: var(--golden-banana) 2px solid;
 }
 
 .close-modal {
@@ -1325,7 +1252,7 @@ body.browse-page {
 
 .modal-course-image {
     flex: 1;
-    min-width: 50%; /* Pastikan gambar tidak terlalu kecil */
+    min-width: 50%;
     background-size: cover;
     background-position: center;
 }
@@ -1411,8 +1338,8 @@ body.browse-page {
   margin-top: 10px;
   margin-bottom: 10px;
   font-size: 14px;
-  max-height: 100px; /* Batasi tinggi agar bisa di-scroll jika terlalu banyak */
-  overflow-y: auto; /* Tambahkan scrollbar jika perlu */
+  max-height: 100px;
+  overflow-y: auto;
 }
 
 .modal-module-list li {
@@ -1424,7 +1351,29 @@ body.browse-page {
   border-bottom: none;
 }
 
-/* Responsive */
+.progress-bar-container {
+    background-color: var(--border-gray);
+    border-radius: 20px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--success-green);
+    border-radius: 20px;
+    width: 0%;
+    transition: width 0.5s ease;
+}
+
+.progress-text {
+    font-size: 12px;
+    color: var(--gray-minion);
+    text-align: right;
+    margin-top: 4px;
+}
+
 @media (max-width: 768px) {
     .modal-header {
         flex-direction: column;
@@ -1433,4 +1382,557 @@ body.browse-page {
     .modal-course-image {
         min-height: 200px;
     }
+}
+
+body.course-module-page {
+    display: block;
+    padding: 0;
+}
+
+.course-module-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 24px;
+    align-items: flex-start;
+    margin-top: 24px;
+}
+
+.module-header {
+    margin-bottom: 24px;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--golden-banana);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.back-link:hover {
+    color: var(--goggle-black);
+}
+
+.module-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--banana-yellow);
+    margin-bottom: 16px;
+}
+
+.progress-bar-container.large {
+    flex-grow: 1;
+    max-width: 400px;
+    height: 12px;
+}
+
+#course-progress-text {
+    font-weight: 600;
+}
+
+#module-count {
+    color: var(--gray-minion);
+}
+
+.module-layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+.module-content-panel {
+    background-color: var(--pure-white);
+    border-radius: 12px;
+    padding: 32px;
+    border: 2px solid var(--golden-banana);
+    overflow-y: auto; 
+}
+
+.module-list-panel {
+    background-color: var(--pure-white);
+    border-radius: 12px;
+    padding: 24px;
+    border: 2px solid var(--golden-banana);
+    overflow-y: auto; 
+}
+
+.module-list-panel h2 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--golden-banana);
+}
+
+#module-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.contents-header {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--goggle-black);
+}
+
+.content-section {
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--overall-blue);
+    margin-bottom: 16px;
+}
+
+.content-description {
+    line-height: 1.6;
+    color: var(--goggle-black);
+    margin-bottom: 20px;
+    text-align: justify;
+}
+
+.media-section {
+    margin-top: 24px;
+}
+
+.module-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid var(--golden-banana);
+    background-color: var(--light-banana);
+}
+
+.module-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.module-item-order {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-minion);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.module-item-title {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+#module-list .module-item {
+    padding: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    border: 1px solid var(--border-gray);
+    background-color: var(--pure-white);
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.module-item:hover {
+    background-color: var(--banana-yellow);
+    transform: translateY(-1px);
+}
+
+.module-item.completed {
+    background-color: var(--success-green);
+    color: var(--pure-white);
+    border-color: var(--success-green);
+}
+
+.module-item.active {
+    background-color: var(--overall-blue);
+    color: var(--pure-white);
+    border-color: var(--overall-blue);
+}
+
+#module-list .module-item:hover {
+    border-color: var(--golden-banana);
+    background-color: var(--cream-banana);
+}
+
+#module-list .module-item.active {
+    background-color: var(--golden-banana);
+    border-color: var(--golden-banana);
+    font-weight: 600;
+    color: var(--pure-white);
+}
+
+#module-list .module-item.active .completed-icon {
+    color: var(--pure-white);
+}
+
+#module-list .module-item .completed-icon {
+    color: var(--success-green);
+    font-size: 16px;
+}
+
+#module-list .module-item.active .module-item-order {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+#module-list .module-item.active .module-item-title {
+    color: var(--pure-white);
+}
+
+.module-content-panel h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--banana-yellow);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.module-title {
+    font-size: 14px;
+    font-weight: 500;
+    flex-grow: 1;
+    color: var(--title-blue);
+}
+
+.module-status-icon {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#module-description {
+    line-height: 1.6;
+    color: var(--gray-minion);
+    margin-bottom: 24px;
+}
+
+#module-pdf-container {
+    background-color: var(--cream-banana);
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    border: 1px solid var(--banana-yellow);
+}
+
+#module-pdf-container i {
+    color: var(--danger-red);
+    font-size: 24px;
+}
+
+#module-pdf-link {
+    font-weight: 600;
+    color: var(--overall-blue);
+    text-decoration: none;
+}
+
+#complete-module-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--success-green);
+    color: var(--pure-white);
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+#complete-module-btn.completed {
+    background-color: var(--success-green);
+    cursor: not-allowed;
+}
+
+.media-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background-color: var(--cream-banana);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    border: 1px solid var(--banana-yellow);
+}
+
+.media-icon {
+    width: 24px;
+    height: 24px;
+    color: var(--overall-blue);
+}
+
+.media-link {
+    color: var(--overall-blue);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.media-link:hover {
+    text-decoration: underline;
+}
+
+.course-progress-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 32px;
+    background-color: var(--pure-white);
+    padding: 16px 24px;
+    border-radius: 12px;
+    border: 1px solid var(--border-gray);
+}
+
+.progress-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-grow: 1;
+}
+
+.progress-bar-container.large {
+    flex-grow: 1;
+    max-width: 400px;
+    height: 12px;
+}
+
+.progress-text-large {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--goggle-black);
+}
+
+.progress-bar-container.large {
+    flex-grow: 1;
+    max-width: 300px;
+    height: 10px;
+    background-color: var(--border-gray);
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.progress-bar.large {
+    height: 100%;
+    background-color: var(--banana-yellow);
+    border-radius: 20px;
+    transition: width 0.5s ease;
+}
+
+.module-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid var(--border-gray);
+}
+
+.course-info h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--title-blue);
+    margin: 0;
+}
+
+.course-info .breadcrumb {
+    font-size: 14px;
+    color: var(--gray-minion);
+    margin-bottom: 8px;
+}
+
+.course-info .breadcrumb a {
+    color: var(--gray-minion);
+    text-decoration: none;
+}
+
+.course-info .breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+.course-info .breadcrumb .active {
+    color: var(--goggle-black);
+    font-weight: 500;
+}
+
+.user-profile-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-greeting-large {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--goggle-black);
+}
+
+.user-avatar-large {
+    width: 48px;
+    height: 48px;
+    background-color: var(--overall-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.notification-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.notification-content {
+    background: var(--pure-white);
+    border-radius: 16px;
+    padding: 32px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.close-notification {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--gray-minion);
+}
+
+.notification-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    margin: 0 auto 16px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 32px;
+}
+
+.notification-icon.yellow {
+    background-color: var(--light-banana);
+    border: 2px solid var(--golden-banana);
+    color: var(--golden-banana);
+}
+
+.notification-content h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--goggle-black);
+    margin-bottom: 8px;
+}
+
+.notification-content p {
+    font-size: 16px;
+    color: var(--gray-minion);
+    margin-bottom: 24px;
+}
+
+.notification-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.notification-buttons button {
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-grow: 1;
+}
+
+.btn-confirm {
+    background-color: var(--golden-banana);
+    color: var(--pure-white);
+}
+
+.btn-cancel {
+    background-color: var(--danger-red);
+    color: var(--pure-white);
+}
+
+.topics-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.topic-tag {
+    background-color: var(--soft-overall);
+    color: var(--overall-blue);
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.certificate-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--title-blue);
+    color: var(--pure-white);
+    border: var(--overall-blue);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background-color 0.2s ease;
+}
+
+.certificate-btn:hover {
+    background-color: var(--overall-blue);
+}
+
+.no-courses-message {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 48px 0;
+    color: var(--gray-minion);
+    font-size: 16px;
 }

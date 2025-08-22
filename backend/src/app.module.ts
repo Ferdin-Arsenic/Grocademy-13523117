@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { CoursesModule } from './courses/courses.module';
 import { ModulesModule } from './modules/modules.module';
 import { UsersModule } from './users/users.module';
+import { CertificateModule } from './certificate/certificate.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UsersModule } from './users/users.module';
     CoursesModule,
     ModulesModule,
     UsersModule,
+    CertificateModule,
   ],
   controllers: [AppController],
   providers: [AppService],

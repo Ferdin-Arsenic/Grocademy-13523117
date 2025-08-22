@@ -1,8 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  UnauthorizedException
-} from '@nestjs/common';
+import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterUserDto } from './dto/register-user.dto';
 import * as bcrypt from 'bcrypt';
@@ -17,14 +13,14 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
 
       try {
-        const { firstName, lastName, email, username } = registerUserDto; // Ambil hanya field yang dibutuhkan
+        const { firstName, lastName, email, username } = registerUserDto;
         const user = await this.prisma.user.create({
           data: {
             firstName,
             lastName,
             email,
             username,
-            password: hashedPassword, // Gunakan password yang sudah di-hash
+            password: hashedPassword,
           },
         });
 
@@ -50,20 +46,10 @@ export class AuthService {
       },
     });
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+    if (!user || !(await bcrypt.compare(loginUserDto.password, user.password))) {
+      throw new UnauthorizedException('Invalid identifier or password');
     }
-
-    const isPasswordMatching = await bcrypt.compare(
-      loginUserDto.password,
-      user.password,
-    );
-
-    if (!isPasswordMatching) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    const payload = { sub: user.id, username: user.username, role: user.role};
+    const payload = { sub: user.id, username: user.username, role: user.role };
     return {
       accessToken: await this.jwtService.signAsync(payload),
     };

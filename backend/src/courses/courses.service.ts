@@ -10,11 +10,13 @@ export class CoursesService {
   constructor(private prisma: PrismaService) {}
 
   create(createCourseDto: CreateCourseDto, filePath: string | null) {
+    const topicsLowerCase = createCourseDto.topics.map(topic => topic.toLowerCase());
     return this.prisma.course.create({
       data: {
         ...createCourseDto,
-        price: Number(createCourseDto.price), // Pastikan harga adalah angka
-        thumbnailImage: filePath, // Simpan path file di sini
+        topics: topicsLowerCase, 
+        price: Number(createCourseDto.price), 
+        thumbnailImage: filePath,
       },
     });
   }
@@ -23,8 +25,8 @@ export class CoursesService {
     query?: string,
     page: number = 1,
     limit: number = 15,
-    sortBy: string = 'createdAt', // Default sort by
-    sortOrder: 'asc' | 'desc' = 'desc', // Default sort order
+    sortBy: string = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const skip = (page - 1) * limit;
 
@@ -33,12 +35,11 @@ export class CoursesService {
           OR: [
             { title: { contains: query, mode: 'insensitive' } },
             { instructor: { contains: query, mode: 'insensitive' } },
-            { topics: { has: query } },
+            { topics: { has: query.toLowerCase() } },
           ],
         }
       : {};
 
-    // Logika untuk sorting
     const orderBy = {
       [sortBy]: sortOrder,
     };
@@ -47,7 +48,7 @@ export class CoursesService {
       where: whereCondition,
       skip,
       take: limit,
-      orderBy, // <-- Terapkan sorting di sini
+      orderBy,
     });
 
     const totalItems = await this.prisma.course.count({ where: whereCondition });
@@ -116,21 +117,30 @@ export class CoursesService {
   }
 
   async buyCourse(courseId: string, userId: string) {
-    const course = await this.prisma.course.findUnique({ where: { id: courseId } });
+    const [course, user] = await Promise.all([
+      this.prisma.course.findUnique({ where: { id: courseId } }),
+      this.prisma.user.findUnique({ where: { id: userId } }),
+    ]);
+
     if (!course) {
       throw new NotFoundException(`Course with ID ${courseId} not found`);
     }
-
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
+    const existingPurchase = await this.prisma.userCourse.findUnique({
+        where: { userId_courseId: { userId, courseId } },
+    });
+
+    if (existingPurchase) {
+        throw new BadRequestException('You have already purchased this course.');
+    }
     if (user.balance < course.price) {
       throw new BadRequestException('Insufficient balance');
     }
 
-    const [, userCourse] = await this.prisma.$transaction([
+    const [updatedUser] = await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
         data: { balance: { decrement: course.price } },
@@ -145,7 +155,7 @@ export class CoursesService {
 
     return {
       message: 'Course purchased successfully',
-      transactionId: userCourse.userId + '-' + userCourse.courseId,
+      new_balance: updatedUser.balance,
     };
   }
 
@@ -153,14 +163,49 @@ export class CoursesService {
     const userCourses = await this.prisma.userCourse.findMany({
       where: { userId },
       include: {
-        course: true,
+        course: {
+          include: {
+            _count: {
+              select: { modules: true },
+            },
+          },
+        },
       },
     });
 
-    return userCourses.map((uc) => uc.course);
+    const coursesWithProgress = await Promise.all(
+      userCourses.map(async ({ course }) => {
+        const totalModules = course._count.modules;
+        const completedModulesCount = await this.prisma.userModuleCompletion.count({
+          where: {
+            userId: userId,
+            module: {
+              courseId: course.id,
+            },
+          },
+        });
+
+        const progressPercentage =
+          totalModules > 0
+            ? (completedModulesCount / totalModules) * 100
+            : 0;
+        delete (course as any)._count;
+
+        return {
+          ...course,
+          progress_percentage: Math.round(progressPercentage),
+        };
+      }),
+    );
+
+    return coursesWithProgress;
   }
 
   update(id: string, updateCourseDto: UpdateCourseDto) {
+    if (updateCourseDto.topics) {
+      updateCourseDto.topics = updateCourseDto.topics.map(topic => topic.toLowerCase());
+    }
+    
     return this.prisma.course.update({
       where: { id },
       data: updateCourseDto,

@@ -10,8 +10,28 @@ import { NotFoundException, ForbiddenException } from '@nestjs/common';
 export class ModulesService {
     constructor(private prisma: PrismaService) {}
 
-    create(createModuleDto: CreateModuleDto) {
-        return this.prisma.module.create({ data: createModuleDto });
+    create(
+        createModuleDto: CreateModuleDto,
+        files: {
+        videoContent?: Express.Multer.File[];
+        pdfContent?: Express.Multer.File[];
+        },
+    ) {
+        if (files.videoContent?.[0]) {
+        createModuleDto.videoContent = `/uploads/videos/${files.videoContent[0].filename}`;
+        createModuleDto.videoOriginalName = files.videoContent[0].originalname;
+        }
+        if (files.pdfContent?.[0]) {
+        createModuleDto.pdfContent = `/uploads/pdfs/${files.pdfContent[0].filename}`;
+        createModuleDto.pdfOriginalName = files.pdfContent[0].originalname;
+        }
+
+        const dataToCreate = {
+        ...createModuleDto,
+        order: Number(createModuleDto.order),
+        };
+
+        return this.prisma.module.create({ data: dataToCreate });
     }
 
     findAllByCourse(courseId: string) {
@@ -46,7 +66,6 @@ export class ModulesService {
     }
 
     async completeModule(moduleId: string, userId: string) {
-    // 1. Ambil data modul dan course-nya
     const moduleToComplete = await this.prisma.module.findUnique({
         where: { id: moduleId },
         include: { course: true },
@@ -56,7 +75,6 @@ export class ModulesService {
         throw new NotFoundException(`Module with ID ${moduleId} not found`);
     }
 
-    // 2. Validasi kepemilikan course
     const purchase = await this.prisma.userCourse.findUnique({
         where: {
         userId_courseId: {

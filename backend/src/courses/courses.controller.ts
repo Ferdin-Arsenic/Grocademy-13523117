@@ -17,9 +17,9 @@ export class CoursesController {
 
   @Post()
   @Roles('admin')
-  @UseInterceptors(FileInterceptor('thumbnail_image', { // 'thumbnail_image' adalah nama field di form
+  @UseInterceptors(FileInterceptor('thumbnail_image', {
     storage: diskStorage({
-      destination: './public/uploads/course-thumbnails', // Folder penyimpanan
+      destination: './public/uploads/course-thumbnails',
       filename: (req, file, cb) => {
         const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
         return cb(null, `${randomName}${extname(file.originalname)}`);
@@ -39,8 +39,8 @@ export class CoursesController {
     @Query('q') query?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
     @Query('limit', new DefaultValuePipe(15), ParseIntPipe) limit?: number,
-    @Query('sortBy') sortBy?: string, // <-- Tambahkan ini
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc', // <-- Tambahkan ini
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.coursesService.findAll(query, page, limit, sortBy, sortOrder);
   }
@@ -65,14 +65,14 @@ export class CoursesController {
   }
 
   @Get('user/my-courses')
-  @UseGuards(JwtAuthGuard) // Ditambahkan di level method
+  @UseGuards(JwtAuthGuard)
   findMyCourses(@Req() req: Request) {
     const user = req.user as { id: string };
     return this.coursesService.findMyCourses(user.id);
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard, RolesGuard) // Ditambahkan di level method
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
     return this.coursesService.update(id, updateCourseDto); 

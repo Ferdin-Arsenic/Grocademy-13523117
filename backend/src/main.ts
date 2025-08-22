@@ -28,45 +28,31 @@ async function bootstrap() {
     ],
     credentials: true,
   });
-
-  // Create necessary directories
   const publicPath = join(process.cwd(), 'public');
   const uploadsPath = join(publicPath, 'uploads');
   const courseThumbnailsPath = join(uploadsPath, 'course-thumbnails');
-  
-  console.log('📁 Public path:', publicPath);
-  console.log('📁 Uploads path:', uploadsPath);
-  console.log('📁 Course thumbnails path:', courseThumbnailsPath);
+  const pdfsPath = join(uploadsPath, 'pdfs');
+  const videosPath = join(uploadsPath, 'videos');
 
   // Create directories if they don't exist
-  [publicPath, uploadsPath, courseThumbnailsPath].forEach(dir => {
+  [publicPath, uploadsPath, courseThumbnailsPath, pdfsPath, videosPath].forEach(dir => { // TAMBAHKAN pdfsPath & videosPath DI SINI
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true });
       console.log('✅ Created directory:', dir);
-    } else {
-      console.log('📂 Directory already exists:', dir);
     }
   });
 
-  // Static files configuration
-  app.useStaticAssets(publicPath);
+  app.useStaticAssets(join(process.cwd(), 'public'));
   
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
-  console.log(`🚀 Application is running on: http://localhost:${port}`);
-  
-  // Debug: Print folder contents
+
   const fs = require('fs');
   try {
-    console.log('📂 Checking uploads folder:', courseThumbnailsPath);
     if (fs.existsSync(courseThumbnailsPath)) {
       const files = fs.readdirSync(courseThumbnailsPath);
-      console.log('📄 Files in uploads/course-thumbnails:', files.length > 0 ? files.slice(0, 5) : 'No files found');
-    } else {
-      console.log('❌ Uploads folder does not exist');
     }
   } catch (error) {
-    console.log('❌ Error checking uploads folder:', error.message);
   }
 }
 bootstrap();
