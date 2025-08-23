@@ -22,7 +22,6 @@ export class AuthController {
   @Get('self')
   @UseGuards(JwtAuthGuard)
   async getSelf(@Req() req: Request) { 
-    console.log('User object attached by JwtAuthGuard:', req.user);
     const user = req.user; 
     return {
       status: 'success',

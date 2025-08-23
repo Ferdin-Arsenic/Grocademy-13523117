@@ -1,16 +1,35 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { Prisma } from '@prisma/client';
-import { NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
 
 @Injectable()
 export class CoursesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
+  ) {}
 
-  create(createCourseDto: CreateCourseDto, filePath: string | null) {
+  async create(createCourseDto: CreateCourseDto, filePath: string | null) {
+    const existingCourse = await this.prisma.course.findFirst({
+        where: { 
+            title: { 
+                equals: createCourseDto.title,
+                mode: 'insensitive'
+            } 
+        },
+    });
+
+    if (existingCourse) {
+        throw new ConflictException(`Course with title "${createCourseDto.title}" already exists.`);
+    }
+
     const topicsLowerCase = createCourseDto.topics.map(topic => topic.toLowerCase());
+    await this.cacheManager.del('ALL_COURSES');
     return this.prisma.course.create({
       data: {
         ...createCourseDto,
@@ -20,7 +39,7 @@ export class CoursesService {
       },
     });
   }
-
+  
   async findAll(
     query?: string,
     page: number = 1,
@@ -201,10 +220,12 @@ export class CoursesService {
     return coursesWithProgress;
   }
 
-  update(id: string, updateCourseDto: UpdateCourseDto) {
+  async update(id: string, updateCourseDto: UpdateCourseDto) {
     if (updateCourseDto.topics) {
       updateCourseDto.topics = updateCourseDto.topics.map(topic => topic.toLowerCase());
     }
+
+    await this.cacheManager.del('ALL_COURSES');
     
     return this.prisma.course.update({
       where: { id },
@@ -212,9 +233,45 @@ export class CoursesService {
     });
   }
 
-  remove(id: string) {
-    return this.prisma.course.delete({
+  async remove(id: string) {
+    const course = await this.prisma.course.findUnique({
       where: { id },
+      select: { price: true },
     });
+
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${id} not found`);
+    }
+
+    const purchases = await this.prisma.userCourse.findMany({
+      where: { courseId: id },
+      select: { userId: true },
+    });
+
+    await this.prisma.$transaction(async (prisma) => {
+      if (purchases.length > 0) {
+        const userIds = purchases.map(p => p.userId);
+        await prisma.user.updateMany({
+          where: { id: { in: userIds } },
+          data: {
+            balance: {
+              increment: course.price,
+            },
+          },
+        });
+      }
+
+      await prisma.userCourse.deleteMany({
+        where: { courseId: id },
+      });
+
+      await prisma.course.delete({
+        where: { id },
+      });
+    });
+
+    await this.cacheManager.del('ALL_COURSES');
+
+    return { message: `Course with ID ${id} and all related purchases have been deleted. Refunds have been issued.` };
   }
 }

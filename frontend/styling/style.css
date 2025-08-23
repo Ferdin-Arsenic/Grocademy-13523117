@@ -944,9 +944,21 @@ body.my-courses-page {
 }
 
 @media (max-width: 1024px) {
+    .main-content {
+        padding: 24px;
+    }
+
     .search-container {
         max-width: 300px;
-        width: 300px;
+        width: 100%;
+    }
+
+    .course-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+
+    .module-layout {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -1399,6 +1411,98 @@ body.my-courses-page {
     
     .modal-course-image {
         min-height: 200px;
+    }
+
+    body {
+        padding: 0; /* Hapus padding di body untuk mobile */
+    }
+
+    .sidebar {
+        /* Sembunyikan sidebar di luar layar */
+        left: -280px;
+    }
+    
+    body:not(.sidebar-collapsed) .sidebar {
+        left: 0; /* Tampilkan sidebar saat toggle diklik */
+    }
+
+    .main-content {
+        margin-left: 0;
+        padding: 16px; /* Padding lebih kecil untuk mobile */
+    }
+    
+    #sidebar-toggle {
+        left: 15px !important; /* Posisikan toggle button di kiri */
+        top: 15px !important;
+    }
+    
+    .page-title-header,
+    .search-section,
+    .main-header {
+        flex-direction: column; /* Tumpuk item secara vertikal */
+        align-items: stretch;
+        gap: 16px;
+        text-align: center;
+    }
+
+    .user-profile-container,
+    .balance-display {
+        align-items: center; /* Pusatkan info user & saldo */
+    }
+    
+    .search-container {
+        max-width: 100%;
+        width: 100%;
+    }
+    
+    .sort-buttons {
+        justify-content: center;
+        flex-wrap: wrap; /* Agar tombol bisa pindah baris jika tidak muat */
+    }
+    
+    .course-grid {
+        grid-template-columns: 1fr; /* Satu kolom untuk daftar kursus */
+        gap: 16px;
+    }
+    
+    .browse-title {
+        font-size: 24px;
+    }
+    
+    /* Perbaikan untuk Modal di layar kecil */
+    .modal-content {
+        width: 95%;
+        height: 90vh; /* Buat modal lebih tinggi */
+        max-width: 400px;
+    }
+
+    .modal-header {
+        flex-direction: column; /* Tumpuk gambar dan info di modal */
+    }
+    
+    .modal-course-image {
+        min-height: 200px; /* Tinggi minimal untuk gambar kursus */
+        flex: none; /* Hapus fleksibilitas agar tidak mendominasi */
+        height: 200px;
+    }
+
+    .modal-course-info {
+        padding: 20px;
+    }
+
+    /* Perbaikan untuk halaman modul kursus */
+    .module-page-header {
+        text-align: center;
+    }
+    
+    .course-progress-container {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .progress-info {
+        width: 100%;
+        flex-direction: column;
     }
 }
 

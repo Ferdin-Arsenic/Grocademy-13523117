@@ -3,6 +3,9 @@ const API_BASE_URL = 'http://localhost:3000';
 let currentSortBy = 'title';
 let currentSortOrder = 'desc';
 let userBookmarks = new Set();
+let lastCoursesData = null;
+
+let coursePollingIntervalId = null; 
 
 const registerForm = document.getElementById('registerForm');
 const loginForm = document.getElementById('loginForm');
@@ -95,6 +98,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function startCoursePolling() {
+    stopCoursePolling();
+
+    coursePollingIntervalId = setInterval(() => {
+        const searchBox = document.getElementById('search-box');
+        const currentQuery = searchBox ? searchBox.value : '';
+        
+        loadCourses(1, 10, currentQuery, true); 
+    }, 1000);
+}
+
+function stopCoursePolling() {
+    if (coursePollingIntervalId) {
+        clearInterval(coursePollingIntervalId);
+        coursePollingIntervalId = null;
+    }
+}
+
 function setupBrowsePage() {
     loadUserData();
     loadCourses();
@@ -125,6 +146,7 @@ function setupBrowsePage() {
     }
 
     setupSortingButtons();
+    startCoursePolling();
 }
 
 function setupSortingButtons() {
@@ -141,7 +163,6 @@ function setupSortingButtons() {
             const searchBox = document.getElementById('search-box');
             const currentQuery = searchBox ? searchBox.value : '';
             
-            // TAMBAHKAN KONDISI INI
             if (document.body.classList.contains('bookmarks-page')) {
                 loadBookmarks(1, 10, currentQuery);
             } else {
@@ -160,7 +181,6 @@ function setupSortingButtons() {
             const searchBox = document.getElementById('search-box');
             const currentQuery = searchBox ? searchBox.value : '';
             
-            // TAMBAHKAN KONDISI INI
             if (document.body.classList.contains('bookmarks-page')) {
                 loadBookmarks(1, 10, currentQuery);
             } else {
@@ -181,7 +201,6 @@ function setupSortingButtons() {
             const searchBox = document.getElementById('search-box');
             const currentQuery = searchBox ? searchBox.value : '';
             
-            // TAMBAHKAN KONDISI INI
             if (document.body.classList.contains('bookmarks-page')) {
                 loadBookmarks(1, 10, currentQuery);
             } else {
@@ -258,8 +277,8 @@ function setupMyCoursesPage() {
 
 function setupBookmarksPage() {
     loadUserData();
-    loadUserBookmarks(); // TAMBAHKAN INI
-    loadBookmarks(); // GANTI loadCourses() dengan ini
+    loadUserBookmarks();
+    loadBookmarks(); 
     initializeCourseModal();
 
     const searchButton = document.getElementById('search-button');
@@ -267,12 +286,12 @@ function setupBookmarksPage() {
 
     if (searchButton && searchBox) {
         searchButton.addEventListener('click', () => {
-            loadBookmarks(1, 10, searchBox.value); // GANTI dengan loadBookmarks
+            loadBookmarks(1, 10, searchBox.value);
         });
         
         searchBox.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                loadBookmarks(1, 10, searchBox.value); // GANTI dengan loadBookmarks
+                loadBookmarks(1, 10, searchBox.value);
             }
         });
     }
@@ -408,7 +427,6 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
 
         let courses = await response.json();
 
-        // Filter by search query
         if (query) {
             const lowercasedQuery = query.toLowerCase();
             courses = courses.filter(course => 
@@ -418,7 +436,6 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
             );
         }
 
-        // Sort courses
         if (currentSortBy === 'price') {
             courses.sort((a, b) => {
                 return currentSortOrder === 'asc' 
@@ -452,7 +469,7 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
                             <h3 class="course-title">${course.title}</h3>
                             <p class="course-instructor">by ${course.instructor}</p>
                             <div class="course-footer">
-                                <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
+                                <span class="course-price">$ ${course.price.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                         <button class="bookmark-btn bookmarked" onclick="toggleBookmark('${course.id}', this)" title="Remove from bookmarks">
@@ -525,7 +542,7 @@ async function loadUserData() {
         if(userBalanceDiv) userBalanceDiv.style.display = 'block';
 
     } catch (error) {
-        console.error('Gagal mengambil data user:', error);
+        console.error('Failed to get user data:', error);
         window.location.href = 'login.html';
     }
 }
@@ -546,7 +563,7 @@ async function loadUserDataWithoutRedirect() {
 
         if (!response.ok) {
             localStorage.removeItem('accessToken');
-            if(userInfoDiv) userInfoDiv.innerHTML = '<a href="login.html">Your session has expired. Please log in again.</a>';
+            if(userInfoDiv) userInfoDiv.innerHTML = '<a href="login.html">Your session has expired. Please login again.</a>';
             return;
         }
 
@@ -563,7 +580,7 @@ async function loadUserDataWithoutRedirect() {
     }
 }
 
-async function loadCourses(page = 1, limit = 10, query = '') {
+async function loadCourses(page = 1, limit = 10, query = '', silent = false) {
     const courseListContainer = document.getElementById('course-list-container');
     if (!courseListContainer) return;
 
@@ -584,7 +601,9 @@ async function loadCourses(page = 1, limit = 10, query = '') {
         }
     }
 
-    courseListContainer.innerHTML = '<p>Loading courses...</p>';
+    if (!silent) {
+        courseListContainer.innerHTML = '<p>Loading courses...</p>';
+    }
 
     try {
         const url = new URL(`${API_BASE_URL}/courses`);
@@ -600,6 +619,13 @@ async function loadCourses(page = 1, limit = 10, query = '') {
         if (!response.ok) throw new Error('Failed to load the courses');
 
         const result = await response.json();
+
+        const newCoursesData = JSON.stringify(result.data);
+        if (newCoursesData === lastCoursesData) {
+            return;
+        }
+        lastCoursesData = newCoursesData;
+
         let { data, pagination } = result;
         if (purchasedCourseIds.size > 0) {
             data = data.filter(course => !purchasedCourseIds.has(course.id));
@@ -633,7 +659,7 @@ async function loadCourses(page = 1, limit = 10, query = '') {
                             <h3 class="course-title">${course.title}</h3>
                             <p class="course-instructor">by ${course.instructor}</p>
                             <div class="course-footer">
-                                <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
+                                <span class="course-price">$ ${course.price.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                         ${bookmarkButtonHTML}
@@ -649,12 +675,19 @@ async function loadCourses(page = 1, limit = 10, query = '') {
             courseListContainer.innerHTML = '<p class="no-courses-message"> No course found</p>';
         }
         
-        renderPagination(pagination);
+        if (!silent) {
+            renderPagination(pagination);
+        }
 
     } catch (error) {
-        courseListContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+        if (!silent) {
+            courseListContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
+        } else {
+            console.error("Polling failed silently:", error.message);
+        }
     }
 }
+
 
 async function loadCourseAndModules(courseId) {
     const token = localStorage.getItem('accessToken');
@@ -759,7 +792,6 @@ function displayModuleContent(courseId, module) {
 
     videoContainer.innerHTML = '';
     
-    // Tampilkan Video jika ada
     if (module.videoContent) {
         const videoPlayer = document.createElement('video');
         videoPlayer.src = `${API_BASE_URL}${module.videoContent}`;
@@ -933,7 +965,7 @@ async function showCourseModal(courseId) {
         document.getElementById('modalCourseTitle').textContent = course.title;
         document.getElementById('modalCourseInstructor').textContent = course.instructor;
         document.getElementById('modalCourseDescription').textContent = course.description;
-        document.getElementById('modalCoursePrice').textContent = `Rp ${course.price.toLocaleString('id-ID')}`;
+        document.getElementById('modalCoursePrice').textContent = `$ ${course.price.toLocaleString('id-ID')}`;
         const topicsContainer = document.getElementById('modalCourseTopics');
         topicsContainer.innerHTML = '';
         if (course.topics && course.topics.length > 0) {
@@ -1017,6 +1049,25 @@ async function showCourseModal(courseId) {
 
         const closeBtn = document.getElementById('closeModal');
         closeBtn.parentNode.insertBefore(modalBookmarkBtn, closeBtn);
+
+        const existingModalBookmarkBtn = document.querySelector('.modal-bookmark-btn');
+        if (existingModalBookmarkBtn) {
+            existingModalBookmarkBtn.remove();
+        }
+        
+        if (!isMyCoursesPage) {
+            const modalBookmarkBtn = document.createElement('button');
+            modalBookmarkBtn.className = `modal-bookmark-btn ${userBookmarks.has(courseId) ? 'bookmarked' : ''}`;
+            modalBookmarkBtn.onclick = () => {
+                const cardButton = document.querySelector(`.course-card[data-course-id="${courseId}"] .bookmark-btn`);
+                toggleBookmark(courseId, cardButton, modalBookmarkBtn);
+            };
+            modalBookmarkBtn.innerHTML = `<i class="${userBookmarks.has(courseId) ? 'fas' : 'far'} fa-bookmark"></i>`;
+            modalBookmarkBtn.title = userBookmarks.has(courseId) ? 'Remove from bookmarks' : 'Add to bookmarks';
+
+            const closeBtn = document.getElementById('closeModal');
+            closeBtn.parentNode.insertBefore(modalBookmarkBtn, closeBtn);
+        }
 
         modal.classList.add('show');
         
@@ -1154,7 +1205,7 @@ function renderPagination(pagination) {
     pageInfo.className = 'page-info';
     pageInfo.textContent = `Page ${current_page} of ${total_pages}`;
     paginationContainer.appendChild(pageInfo);
-
+    
     const nextButton = document.createElement('button');
     nextButton.className = 'pagination-btn arrow';
     nextButton.innerHTML = '&#9654;'; 

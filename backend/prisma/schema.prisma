@@ -31,6 +31,7 @@ model Course {
   instructor     String
   topics         String[]
   price          Float
+  isPublished    Boolean   @default(true)
   thumbnailImage String?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -81,7 +82,7 @@ model UserCourseBookmark {
   userId   String
   courseId String
   user     User     @relation(fields: [userId], references: [id])
-  course   Course   @relation(fields: [courseId], references: [id])
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   bookmarkedAt DateTime @default(now())
 
   @@id([userId, courseId])

@@ -10,6 +10,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import type { Request } from 'express';
+import { CacheInterceptor, CacheTTL, CacheKey } from '@nestjs/cache-manager';
 
 @Controller('courses')
 export class CoursesController {
@@ -26,6 +27,7 @@ export class CoursesController {
       },
     }),
   }))
+
   create(
     @Body() createCourseDto: CreateCourseDto,
     @UploadedFile() file: Express.Multer.File,
@@ -35,6 +37,9 @@ export class CoursesController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
+  @CacheTTL(300) 
+  @CacheKey('ALL_COURSES') 
   findAll(
     @Query('q') query?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
@@ -82,6 +87,6 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   remove(@Param('id') id: string) {
-    return this.coursesService.remove(id);
+    return this.coursesService.remove(id); 
   }
 }
