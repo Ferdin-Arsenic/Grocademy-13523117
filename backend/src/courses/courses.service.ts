@@ -82,6 +82,57 @@ export class CoursesService {
     };
   }
 
+  async findAllForUser(
+    userId: string,
+    query?: string,
+    page: number = 1,
+    limit: number = 15,
+    sortBy: string = 'createdAt',
+    sortOrder: 'asc' | 'desc' = 'desc',
+  ) {
+    const skip = (page - 1) * limit;
+
+    const userPurchases = await this.prisma.userCourse.findMany({
+        where: { userId },
+        select: { courseId: true },
+    });
+    const purchasedCourseIds = userPurchases.map(p => p.courseId);
+
+    const whereCondition: Prisma.CourseWhereInput = {
+      // Filter dasar untuk pencarian
+      ...(query && {
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+          { instructor: { contains: query, mode: 'insensitive' } },
+          { topics: { has: query.toLowerCase() } },
+        ],
+      }),
+      id: {
+        notIn: purchasedCourseIds,
+      },
+    };
+
+    const orderBy = { [sortBy]: sortOrder };
+
+    const courses = await this.prisma.course.findMany({
+      where: whereCondition,
+      skip,
+      take: limit,
+      orderBy,
+    });
+
+    const totalItems = await this.prisma.course.count({ where: whereCondition });
+
+    return {
+      data: courses,
+      pagination: {
+        current_page: page,
+        total_pages: Math.ceil(totalItems / limit),
+        total_items: totalItems,
+      },
+    };
+  }
+
   async findModulesForUser(courseId: string, userId: string) {
     const purchase = await this.prisma.userCourse.findUnique({
       where: {

@@ -36,6 +36,20 @@ export class CoursesController {
     return this.coursesService.create(createCourseDto, filePath);
   }
 
+  @Get('for-user')
+  @UseGuards(JwtAuthGuard)
+  findAllForUser(
+    @Req() req: Request,
+    @Query('q') query?: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
+    @Query('limit', new DefaultValuePipe(15), ParseIntPipe) limit?: number,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
+  ) {
+    const user = req.user as { id: string };
+    return this.coursesService.findAllForUser(user.id, query, page, limit, sortBy, sortOrder);
+  }
+
   @Get()
   @UseInterceptors(CacheInterceptor)
   @CacheTTL(300) 

@@ -4,8 +4,13 @@ let currentSortBy = 'title';
 let currentSortOrder = 'desc';
 let userBookmarks = new Set();
 let lastCoursesData = null;
+let currentPage = 1;
+let currentLimit = 15;
+let myCourseLimit = 10;
+let bookmarksLimit = 10; 
 
 let coursePollingIntervalId = null; 
+let latestRequestTimestamp = 0;
 
 const registerForm = document.getElementById('registerForm');
 const loginForm = document.getElementById('loginForm');
@@ -105,7 +110,7 @@ function startCoursePolling() {
         const searchBox = document.getElementById('search-box');
         const currentQuery = searchBox ? searchBox.value : '';
         
-        loadCourses(1, 10, currentQuery, true); 
+        loadCourses(currentPage, currentLimit, currentQuery, true); 
     }, 1000);
 }
 
@@ -118,22 +123,37 @@ function stopCoursePolling() {
 
 function setupBrowsePage() {
     loadUserData();
-    loadCourses();
+    loadCourses(1, currentLimit);
     loadUserBookmarks();
     initializeCourseModal();
 
     const searchButton = document.getElementById('search-button');
     const searchBox = document.getElementById('search-box');
+    const itemsPerPageSelect = document.getElementById('items-per-page');
 
     if (searchButton && searchBox) {
         searchButton.addEventListener('click', () => {
-            loadCourses(1, 10, searchBox.value);
+            loadCourses(1, currentLimit, searchBox.value); 
         });
         
         searchBox.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                loadCourses(1, 10, searchBox.value);
+                loadCourses(1, currentLimit, searchBox.value); 
             }
+        });
+    }
+
+    if (itemsPerPageSelect) {
+        itemsPerPageSelect.addEventListener('change', async () => {
+            stopCoursePolling();
+            
+            currentLimit = parseInt(itemsPerPageSelect.value, 10);
+            const searchBox = document.getElementById('search-box');
+            const currentQuery = searchBox ? searchBox.value : '';
+            
+            await loadCourses(1, currentLimit, currentQuery); 
+            
+            startCoursePolling();
         });
     }
 
@@ -212,16 +232,17 @@ function setupSortingButtons() {
 
 function setupMyCoursesPage() {
     loadUserDataWithoutRedirect();
-    loadMyCourses();
+    loadMyCourses(1, myCourseLimit);
     initializeCourseModal();
 
     const searchButton = document.getElementById('search-button');
     const searchBox = document.getElementById('search-box');
+    const itemsPerPageSelect = document.getElementById('items-per-page-my-course');
 
     if (searchButton && searchBox) {
         const performSearch = () => {
             const query = searchBox.value;
-            loadMyCourses(1, 10, query, currentSortBy, currentSortOrder); 
+            loadMyCourses(1, myCourseLimit, query, currentSortBy, currentSortOrder);
         };
 
         searchButton.addEventListener('click', performSearch);
@@ -243,7 +264,7 @@ function setupMyCoursesPage() {
             currentSortBy = 'progress';
             sortProgressBtn.classList.add('active');
             if (sortTitleBtn) sortTitleBtn.classList.remove('active');
-            loadMyCourses(1, 10, '', currentSortBy, currentSortOrder);
+            loadMyCourses(1, myCourseLimit, query, currentSortBy, currentSortOrder);
         });
     }
 
@@ -252,7 +273,7 @@ function setupMyCoursesPage() {
             currentSortBy = 'title';
             sortTitleBtn.classList.add('active');
             if (sortProgressBtn) sortProgressBtn.classList.remove('active');
-            loadMyCourses(1, 10, '', currentSortBy, currentSortOrder);
+            loadMyCourses(1, myCourseLimit, query, currentSortBy, currentSortOrder);
         });
     }
 
@@ -263,7 +284,15 @@ function setupMyCoursesPage() {
             if (icon) {
                 icon.className = currentSortOrder === 'asc' ? 'fas fa-arrow-up' : 'fas fa-arrow-down';
             }
-            loadMyCourses(1, 10, '', currentSortBy, currentSortOrder);
+            loadMyCourses(1, myCourseLimit, query, currentSortBy, currentSortOrder);
+        });
+    }
+
+    if (itemsPerPageSelect) {
+        itemsPerPageSelect.addEventListener('change', () => {
+            myCourseLimit = parseInt(itemsPerPageSelect.value, 10);
+            const query = searchBox ? searchBox.value : '';
+            loadMyCourses(1, myCourseLimit, query, currentSortBy, currentSortOrder);
         });
     }
 
@@ -278,21 +307,30 @@ function setupMyCoursesPage() {
 function setupBookmarksPage() {
     loadUserData();
     loadUserBookmarks();
-    loadBookmarks(); 
+    loadBookmarks(1, bookmarksLimit);
     initializeCourseModal();
 
     const searchButton = document.getElementById('search-button');
     const searchBox = document.getElementById('search-box');
+    const itemsPerPageSelect = document.getElementById('items-per-page-bookmarks');
 
     if (searchButton && searchBox) {
         searchButton.addEventListener('click', () => {
-            loadBookmarks(1, 10, searchBox.value);
+            loadBookmarks(1, bookmarksLimit, searchBox.value); 
         });
         
         searchBox.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
-                loadBookmarks(1, 10, searchBox.value);
+                loadBookmarks(1, bookmarksLimit, searchBox.value); 
             }
+        });
+    }
+
+    if (itemsPerPageSelect) {
+        itemsPerPageSelect.addEventListener('change', () => {
+            bookmarksLimit = parseInt(itemsPerPageSelect.value, 10);
+            const query = searchBox ? searchBox.value : '';
+            loadBookmarks(1, bookmarksLimit, query);
         });
     }
 
@@ -355,11 +393,11 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
         });
         if (!response.ok) throw new Error('Gagal memuat data kursus Anda');
 
-        let courses = await response.json();
+        let allCourses = await response.json();
 
         if (query) {
             const lowercasedQuery = query.toLowerCase();
-            courses = courses.filter(course => 
+            allCourses = allCourses.filter(course => 
                 course.title.toLowerCase().includes(lowercasedQuery) ||
                 course.instructor.toLowerCase().includes(lowercasedQuery) ||
                 (course.topics && course.topics.some(topic => topic.toLowerCase().includes(lowercasedQuery)))
@@ -367,19 +405,25 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
         }
 
         if (sortBy === 'progress') {
-            courses.sort((a, b) => {
+            allCourses.sort((a, b) => {
                 return sortOrder === 'asc' 
                     ? a.progress_percentage - b.progress_percentage 
                     : b.progress_percentage - a.progress_percentage;
             });
         } else if (sortBy === 'title') {
-            courses.sort((a, b) => {
+            allCourses.sort((a, b) => {
                 return sortOrder === 'asc' 
                     ? a.title.localeCompare(b.title) 
                     : b.title.localeCompare(a.title);
             });
         }
         
+        const totalItems = allCourses.length;
+        const totalPages = Math.ceil(totalItems / limit);
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+        const courses = allCourses.slice(startIndex, endIndex);
+
         courseListContainer.innerHTML = ''; 
 
         if (courses && courses.length > 0) {
@@ -391,7 +435,6 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
                         </div>
                         <div class="course-content">
                             <h3 class="course-title">${course.title}</h3>
-
                             <p class="course-instructor">by ${course.instructor}</p>
                             <div class="progress-bar-container">
                                 <div class="progress-bar" style="width: ${course.progress_percentage}%;"></div>
@@ -406,6 +449,9 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
         } else {
             courseListContainer.innerHTML = '<p class="no-courses-message">Your course is empty.</p>';
         }
+
+        renderPaginationForMyCourses(page, totalPages, query, sortBy, sortOrder);
+
     } catch (error) {
         courseListContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
     }
@@ -425,11 +471,11 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
         
         if (!response.ok) throw new Error('Failed to load bookmarks');
 
-        let courses = await response.json();
+        let allCourses = await response.json();
 
         if (query) {
             const lowercasedQuery = query.toLowerCase();
-            courses = courses.filter(course => 
+            allCourses = allCourses.filter(course => 
                 course.title.toLowerCase().includes(lowercasedQuery) ||
                 course.instructor.toLowerCase().includes(lowercasedQuery) ||
                 (course.topics && course.topics.some(topic => topic.toLowerCase().includes(lowercasedQuery)))
@@ -437,18 +483,24 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
         }
 
         if (currentSortBy === 'price') {
-            courses.sort((a, b) => {
+            allCourses.sort((a, b) => {
                 return currentSortOrder === 'asc' 
                     ? a.price - b.price 
                     : b.price - a.price;
             });
         } else if (currentSortBy === 'title') {
-            courses.sort((a, b) => {
+            allCourses.sort((a, b) => {
                 return currentSortOrder === 'asc' 
                     ? a.title.localeCompare(b.title) 
                     : b.title.localeCompare(a.title);
             });
         }
+        
+        const totalItems = allCourses.length;
+        const totalPages = Math.ceil(totalItems / limit);
+        const startIndex = (page - 1) * limit;
+        const endIndex = page * limit;
+        const courses = allCourses.slice(startIndex, endIndex);
         
         courseListContainer.innerHTML = ''; 
         
@@ -469,7 +521,7 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
                             <h3 class="course-title">${course.title}</h3>
                             <p class="course-instructor">by ${course.instructor}</p>
                             <div class="course-footer">
-                                <span class="course-price">$ ${course.price.toLocaleString('id-ID')}</span>
+                                <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                         <button class="bookmark-btn bookmarked" onclick="toggleBookmark('${course.id}', this)" title="Remove from bookmarks">
@@ -486,6 +538,8 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
         } else {
             courseListContainer.innerHTML = '<p class="no-courses-message">No bookmarked courses found.</p>';
         }
+
+        renderPaginationForBookmarks(page, totalPages, query);
 
     } catch (error) {
         courseListContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
@@ -580,62 +634,54 @@ async function loadUserDataWithoutRedirect() {
     }
 }
 
-async function loadCourses(page = 1, limit = 10, query = '', silent = false) {
+async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
+    const requestTimestamp = Date.now();
+    latestRequestTimestamp = requestTimestamp;
+
+    currentPage = page;
+    currentLimit = limit;
+    
     const courseListContainer = document.getElementById('course-list-container');
     if (!courseListContainer) return;
 
     const token = localStorage.getItem('accessToken');
-    let purchasedCourseIds = new Set(); 
-
-    if (token) {
-        try {
-            const myCoursesResponse = await fetch(`${API_BASE_URL}/courses/user/my-courses`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (myCoursesResponse.ok) {
-                const myCourses = await myCoursesResponse.json();
-                purchasedCourseIds = new Set(myCourses.map(course => course.id));
-            }
-        } catch (error) {
-            console.error("Failed to get user course data for filtering: ", error);
-        }
-    }
+    const endpoint = token ? `${API_BASE_URL}/courses/for-user` : `${API_BASE_URL}/courses`;
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
     if (!silent) {
         courseListContainer.innerHTML = '<p>Loading courses...</p>';
     }
 
     try {
-        const url = new URL(`${API_BASE_URL}/courses`);
+        const url = new URL(endpoint);
         url.searchParams.append('page', page);
         url.searchParams.append('limit', limit);
-        if (query) {
-            url.searchParams.append('q', query);
-        }
+        if (query) url.searchParams.append('q', query);
         url.searchParams.append('sortBy', currentSortBy);
         url.searchParams.append('sortOrder', currentSortOrder);
 
-        const response = await fetch(url);
+        const response = await fetch(url, { headers });
+
+        if (requestTimestamp < latestRequestTimestamp) {
+            return;
+        }
+
         if (!response.ok) throw new Error('Failed to load the courses');
 
         const result = await response.json();
-
+        
         const newCoursesData = JSON.stringify(result.data);
-        if (newCoursesData === lastCoursesData) {
+        if (newCoursesData === lastCoursesData && silent) {
             return;
         }
         lastCoursesData = newCoursesData;
 
-        let { data, pagination } = result;
-        if (purchasedCourseIds.size > 0) {
-            data = data.filter(course => !purchasedCourseIds.has(course.id));
-        }
-        
+        const { data, pagination } = result;
         courseListContainer.innerHTML = ''; 
         
         if (data && data.length > 0) {
             data.forEach(course => {
-                let imageUrl = '../assets/placeholder.jpeg'; 
+                let imageUrl = '../assets/placeholder.jpeg';
                 if (course.thumbnailImage) {
                     const cleanPath = course.thumbnailImage.replace(/^\/+/, '');
                     imageUrl = `${API_BASE_URL}/${cleanPath}`;
@@ -659,7 +705,7 @@ async function loadCourses(page = 1, limit = 10, query = '', silent = false) {
                             <h3 class="course-title">${course.title}</h3>
                             <p class="course-instructor">by ${course.instructor}</p>
                             <div class="course-footer">
-                                <span class="course-price">$ ${course.price.toLocaleString('id-ID')}</span>
+                                <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                         ${bookmarkButtonHTML}
@@ -680,6 +726,9 @@ async function loadCourses(page = 1, limit = 10, query = '', silent = false) {
         }
 
     } catch (error) {
+        if (requestTimestamp < latestRequestTimestamp) {
+            return;
+        }
         if (!silent) {
             courseListContainer.innerHTML = `<p style="color: red;">${error.message}</p>`;
         } else {
@@ -687,7 +736,6 @@ async function loadCourses(page = 1, limit = 10, query = '', silent = false) {
         }
     }
 }
-
 
 async function loadCourseAndModules(courseId) {
     const token = localStorage.getItem('accessToken');
@@ -1197,7 +1245,7 @@ function renderPagination(pagination) {
     prevButton.addEventListener('click', () => {
         const searchBox = document.getElementById('search-box');
         const currentQuery = searchBox ? searchBox.value : '';
-        loadCourses(current_page - 1, 10, currentQuery);
+        loadCourses(current_page - 1, currentLimit, currentQuery);
     });
     paginationContainer.appendChild(prevButton);
 
@@ -1213,7 +1261,73 @@ function renderPagination(pagination) {
     nextButton.addEventListener('click', () => {
         const searchBox = document.getElementById('search-box');
         const currentQuery = searchBox ? searchBox.value : '';
-        loadCourses(current_page + 1, 10, currentQuery);
+        loadCourses(current_page + 1, currentLimit, currentQuery);
+    });
+    paginationContainer.appendChild(nextButton);
+}
+
+function renderPaginationForMyCourses(currentPage, totalPages, query, sortBy, sortOrder) {
+    const paginationContainer = document.getElementById('pagination-container');
+    if (!paginationContainer || totalPages <= 1) {
+        if(paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    paginationContainer.innerHTML = '';
+    
+    const prevButton = document.createElement('button');
+    prevButton.className = 'pagination-btn arrow';
+    prevButton.innerHTML = '&#9664;'; 
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener('click', () => {
+        loadMyCourses(currentPage - 1, myCourseLimit, query, sortBy, sortOrder);
+    });
+    paginationContainer.appendChild(prevButton);
+
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'page-info';
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    paginationContainer.appendChild(pageInfo);
+
+    const nextButton = document.createElement('button');
+    nextButton.className = 'pagination-btn arrow';
+    nextButton.innerHTML = '&#9654;'; 
+    nextButton.disabled = currentPage >= totalPages;
+    nextButton.addEventListener('click', () => {
+        loadMyCourses(currentPage - 1, myCourseLimit, query, sortBy, sortOrder);
+    });
+    paginationContainer.appendChild(nextButton);
+}
+
+function renderPaginationForBookmarks(currentPage, totalPages, query) {
+    const paginationContainer = document.getElementById('pagination-container');
+    if (!paginationContainer || totalPages <= 1) {
+        if(paginationContainer) paginationContainer.innerHTML = '';
+        return;
+    }
+    
+    paginationContainer.innerHTML = '';
+    
+    const prevButton = document.createElement('button');
+    prevButton.className = 'pagination-btn arrow';
+    prevButton.innerHTML = '&#9664;'; 
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener('click', () => {
+        loadBookmarks(currentPage - 1, bookmarksLimit, query);
+    });
+    paginationContainer.appendChild(prevButton);
+
+    const pageInfo = document.createElement('span');
+    pageInfo.className = 'page-info';
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    paginationContainer.appendChild(pageInfo);
+
+    const nextButton = document.createElement('button');
+    nextButton.className = 'pagination-btn arrow';
+    nextButton.innerHTML = '&#9654;'; 
+    nextButton.disabled = currentPage >= totalPages;
+    nextButton.addEventListener('click', () => {
+        loadBookmarks(currentPage - 1, bookmarksLimit, query);
     });
     paginationContainer.appendChild(nextButton);
 }
