@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, DefaultValuePipe, ParseIntPipe, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Patch, Param, Delete, UseGuards, Query, DefaultValuePipe, ParseIntPipe, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
@@ -90,11 +90,34 @@ export class CoursesController {
     return this.coursesService.buyCourse(id, user.id);
   }
 
-  @Patch(':id')
+  // FIX: Tambahkan FileInterceptor untuk update juga
+  @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
-    return this.coursesService.update(id, updateCourseDto); 
+  @UseInterceptors(FileInterceptor('thumbnail_image', {
+    storage: diskStorage({
+      destination: './public/uploads/course-thumbnails',
+      filename: (req, file, cb) => {
+        const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+        return cb(null, `${randomName}${extname(file.originalname)}`);
+      },
+    }),
+  }))
+  update(
+    @Param('id') id: string, 
+    @Body() updateCourseDto: UpdateCourseDto,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    // Handle topics parsing seperti di create
+    if (updateCourseDto.topics && typeof updateCourseDto.topics === 'string') {
+      (updateCourseDto.topics as any) = (updateCourseDto.topics as string)
+        .split(',')
+        .map(topic => topic.trim())
+        .filter(topic => topic.length > 0); 
+    }
+
+    const filePath = file ? `/uploads/course-thumbnails/${file.filename}` : null;
+    return this.coursesService.update(id, updateCourseDto, filePath); 
   }
 
   @Delete(':id')

@@ -54,8 +54,6 @@ export class CoursesService {
     });
     return this.transformCourse(newCourse); 
   }
-  
-  // File: courses.service.ts
 
   async findAll(
       query?: string,
@@ -65,16 +63,12 @@ export class CoursesService {
       sortOrder: 'asc' | 'desc' = 'desc',
   ) {
       try {
-          // Kunci cache yang unik berdasarkan parameter query
           const cacheKey = `ALL_COURSES_${query}_${page}_${limit}_${sortBy}_${sortOrder}`;
 
-          // 1. Coba ambil dari cache terlebih dahulu
           const cachedData = await this.cacheManager.get(cacheKey);
           if (cachedData) {
-              return cachedData; // Jika ada, kembalikan data cache
+              return cachedData;
           }
-
-          // --- Jika tidak ada di cache, lanjutkan ke database ---
 
           const skip = (page - 1) * limit;
           const whereCondition: Prisma.CourseWhereInput = query
@@ -89,31 +83,27 @@ export class CoursesService {
 
           const orderBy = { [sortBy]: sortOrder };
 
-          // 2. Ambil kursus DAN jumlah modulnya dalam satu query efisien
           const courses = await this.prisma.course.findMany({
               where: whereCondition,
               skip,
               take: limit,
               orderBy,
               include: {
-                  _count: { // Ini adalah magic dari Prisma untuk menghitung relasi
+                  _count: {
                       select: { modules: true },
                   },
               },
           });
 
           const totalItems = await this.prisma.course.count({ where: whereCondition });
-
-          // 3. Transformasi data SETELAH diambil dari database
           const transformedCourses = courses.map(course => {
-              const transformed = this.transformCourse(course); // Transformasi URL gambar
+              const transformed = this.transformCourse(course);
               return {
                   ...transformed,
-                  total_modules: course._count.modules, // Ambil jumlah modul dari hasil query
+                  total_modules: course._count.modules,
               };
           });
 
-          // 4. Siapkan data untuk dikirim dan disimpan di cache
           const response = {
               status: "success",
               message: "Courses retrieved successfully",
@@ -124,9 +114,7 @@ export class CoursesService {
                   total_items: totalItems,
               },
           };
-
-          // 5. Simpan hasil akhir yang sudah benar ke dalam cache
-          await this.cacheManager.set(cacheKey, response, 300); // Cache selama 5 menit
+          await this.cacheManager.set(cacheKey, response, 300);
 
           return response;
 
@@ -284,11 +272,48 @@ async buyCourse(courseId: string, userId: string) {
         data: transformedCourses,
     };
   }
-  async update(id: string, updateCourseDto: UpdateCourseDto) {
-    if (updateCourseDto.topics) { updateCourseDto.topics = updateCourseDto.topics.map(topic => topic.toLowerCase()); }
-    await this.cacheManager.del('ALL_COURSES');
-    const updatedCourse = await this.prisma.course.update({ where: { id }, data: updateCourseDto, });
-    return this.transformCourse(updatedCourse);
+
+  async update(id: string, updateCourseDto: UpdateCourseDto, filePath?: string | null) {
+    const existingCourse = await this.prisma.course.findUnique({
+      where: { id }
+    });
+
+    if (!existingCourse) {
+      throw new NotFoundException(`Course with ID ${id} not found`);
+    }
+
+    const updateData: any = { ...updateCourseDto };
+
+    if (updateCourseDto.topics) { 
+      updateData.topics = updateCourseDto.topics.map(topic => topic.toLowerCase()); 
+    }
+
+    if (updateCourseDto.price !== undefined) {
+      updateData.price = Number(updateCourseDto.price);
+    }
+
+    if (filePath) {
+      updateData.thumbnailImage = filePath;
+    }
+
+    try {
+      await this.cacheManager.del('ALL_COURSES');
+      const updatedCourse = await this.prisma.course.update({ 
+        where: { id }, 
+        data: updateData,
+      });
+
+      return {
+        status: "success",
+        message: "Course updated successfully",
+        data: this.transformCourse(updatedCourse)
+      };
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('Course with this title already exists');
+      }
+      throw new BadRequestException(`Failed to update course: ${error.message}`);
+    }
   }
   async remove(id: string) {
     const course = await this.prisma.course.findUnique({

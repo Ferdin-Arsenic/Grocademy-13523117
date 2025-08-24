@@ -58,7 +58,6 @@ if (registerForm) {
             submitButton.disabled = false;
             submitButton.textContent = 'Register';
         }
-
     });
 }
 
@@ -90,8 +89,11 @@ if (loginForm) {
             }, 1000);
 
         } catch (error) {
+            messageDiv.classList.add('show', 'error');
             messageDiv.textContent = error.message;
             messageDiv.style.color = 'red';
+            messageDiv.innerHTML = `Invalid credentials. <a href="register.html"> Register here</a> if you dont have an account.`;
+
         }
     });
 }
@@ -439,11 +441,12 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
 
         if (courses && courses.length > 0) {
             courses.forEach(course => {
-                const imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
+                let imageUrl = course.thumbnail_image || '../assets/placeholder.jpeg';
+
                 const myCourseCardHTML = `
                     <div class="course-card" data-course-id="${course.id}">
                         <div class="course-image">
-                            <img src="${imageUrl}" alt="${course.title}">
+                            <img src="${imageUrl}" alt="${course.title}" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="handleImageError(this)">
                         </div>
                         <div class="course-content">
                             <h3 class="course-title">${course.title}</h3>
@@ -518,7 +521,7 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
         
         if (courses && courses.length > 0) {
             courses.forEach(course => {
-                let imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
+                let imageUrl = course.thumbnail_image || '../assets/placeholder.jpeg';
 
                 const courseCardHTML = `
                     <div class="course-card" data-course-id="${course.id}">
@@ -689,8 +692,6 @@ async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
         
         if (data && data.length > 0) {
             data.forEach(course => {
-                let imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
-
                 const isBookmarked = userBookmarks.has(course.id);
                 const bookmarkButtonHTML = token ? `
                     <button class="bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" 
@@ -700,6 +701,7 @@ async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
                     </button>
                 ` : '';
 
+                let imageUrl = course.thumbnail_image || '../assets/placeholder.jpeg';
                 const courseCardHTML = `
                     <div class="course-card" data-course-id="${course.id}">
                         <div class="course-image">
@@ -741,78 +743,183 @@ async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
     }
 }
 
-// app.js
-
 async function loadCourseAndModules(courseId) {
     const token = localStorage.getItem('accessToken');
+    
     if (!token) {
-        window.location.href = 'login.html';
+        console.error('No authentication token found');
+        const modulesList = document.getElementById('modules-list');
+        if (modulesList) {
+            modulesList.innerHTML = '<li>Please login to access course modules.</li>';
+        }
         return;
     }
-    
+
     try {
-        // --- START OF FIX ---
-        // Add the '/courses/' prefix to the URLs
-        const courseRes = await fetch(`${API_BASE_URL2}/courses/${courseId}`, {
-             headers: { 'Authorization': `Bearer ${token}` }
+        const courseResponse = await fetch(`${API_BASE_URL2}/courses/${courseId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!courseRes.ok) throw new Error('Failed to load the course detail.');
-        const result = await courseRes.json();
-        const course = result.data;
 
-        const modulesRes = await fetch(`${API_BASE_URL2}/courses/${courseId}/modules`, {
-             headers: { 'Authorization': `Bearer ${token}` }
+        if (!courseResponse.ok) {
+            throw new Error('Failed to fetch course details');
+        }
+
+        const courseResult = await courseResponse.json();
+        const course = courseResult.data;
+
+        const modulesResponse = await fetch(`${API_BASE_URL2}/courses/${courseId}/modules`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (!modulesRes.ok) throw new Error('Failed to load module.');
-        let modules = await modulesRes.json();
-        // --- END OF FIX ---
 
-        displayCourseDetails(course, modules);
-        displayModuleList(courseId, modules);
+        if (!modulesResponse.ok) {
+            throw new Error('Failed to fetch course modules');
+        }
+
+        const modulesResult = await modulesResponse.json();
+        const modules = modulesResult.data;
+
+        const transformedModules = modules.map(module => ({
+            id: module.id,
+            title: module.title,
+            description: module.description,
+            order: module.order,
+            videoContent: module.video_content,
+            pdfContent: module.pdf_content,
+            isCompleted: module.is_completed || false
+        }));
+
+        displayCourseDetails(course, transformedModules);
+        displayModuleList(courseId, transformedModules);
+
+        if (transformedModules.length > 0) {
+            const firstModule = transformedModules[0];
+            displayModuleContent(courseId, firstModule);
+            
+            setTimeout(() => {
+                const firstModuleItem = document.querySelector('.module-item');
+                if (firstModuleItem) {
+                    firstModuleItem.classList.add('active');
+                }
+            }, 100);
+        }
 
     } catch (error) {
-        console.error(error);
-        document.querySelector('.main-content').innerHTML = `<h1>Error: ${error.message}</h1>`;
+        console.error('Error loading course and modules:', error);
+        const modulesList = document.getElementById('modules-list');
+        if (modulesList) {
+            modulesList.innerHTML = `<li>Error: ${error.message}</li>`;
+        }
+
+        const mainContent = document.querySelector('.main-content');
+        if (mainContent) {
+            mainContent.innerHTML = `
+                <div class="error-message">
+                    <h2>Error Loading Course</h2>
+                    <p>${error.message}</p>
+                    <button onclick="window.location.reload()" class="btn btn-primary">Try Again</button>
+                </div>
+            `;
+        }
     }
 }
 
-function displayCourseDetails(course, modules) {
-    document.getElementById('course-title-header').textContent = course.title;
-    document.getElementById('course-breadcrumb-title').textContent = course.title;
+function displayModules(modules) {
+    const modulesList = document.getElementById('modules-list');
+    if (!modulesList) return;
 
+    modulesList.innerHTML = '';
 
-    const certificateButton = document.getElementById('download-certificate-btn');
-    const completedCount = modules.filter(m => m.isCompleted).length;
-    const totalModules = modules.length;
-    const progress = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
-
-    if (progress === 100) {
-        certificateButton.style.display = 'inline-flex';
-        certificateButton.onclick = () => {
-            const token = localStorage.getItem('accessToken');
-            fetch(`${API_BASE_URL2}/certificate/${course.id}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            })
-            .then(res => res.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = `sertifikat]-${course.title.replace(/\s+/g, '-')}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(() => alert('Failed to download the certificate.'));
-        };
-    } else {
-        certificateButton.style.display = 'none';
+    if (!modules || modules.length === 0) {
+        modulesList.innerHTML = '<li>No modules available for this course.</li>';
+        return;
     }
 
-    document.getElementById('course-progress-bar').style.width = `${progress}%`;
-    document.getElementById('course-progress-text').textContent = `${progress}%`;
-    document.getElementById('module-count').textContent = `(${completedCount}/${totalModules} Modules)`;
+    modules.forEach(module => {
+        const listItem = document.createElement('li');
+        listItem.className = 'module-item';
+        listItem.dataset.moduleId = module.id;
+        
+        listItem.innerHTML = `
+            <div class="module-info">
+                <span class="module-order">Module ${module.order}</span>
+                <span class="module-title">${module.title}</span>
+            </div>
+            ${module.isCompleted ? '<i class="fas fa-check-circle completed-icon"></i>' : ''}
+        `;
+        
+        listItem.addEventListener('click', () => {
+            document.querySelectorAll('.module-item').forEach(item => 
+                item.classList.remove('active')
+            );
+            listItem.classList.add('active');
+            displayModuleContent(module.courseId, module);
+        });
+        
+        modulesList.appendChild(listItem);
+    });
+}
+
+function displayCourseDetails(course, modules) {
+    const safelySetText = (id, text) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = text || '';
+        }
+    };
+    safelySetText('course-title-header', course.title);
+    safelySetText('course-breadcrumb-title', course.title);
+
+    let completedCount = 0;
+    let totalModules = 0;
+    let progress = 0;
+    
+    if (Array.isArray(modules)) {
+        totalModules = modules.length;
+        completedCount = modules.filter(m => m.isCompleted).length;
+        progress = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
+    }
+
+    const certificateButton = document.getElementById('download-certificate-btn');
+    if (certificateButton) {
+        if (progress === 100) {
+            certificateButton.style.display = 'inline-flex';
+            certificateButton.onclick = () => {
+                const token = localStorage.getItem('accessToken');
+                fetch(`${API_BASE_URL2}/certificate/${course.id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error('Certificate not available');
+                    return res.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = `certificate-${course.title.replace(/\s+/g, '-')}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(error => {
+                    console.error('Certificate download failed:', error);
+                    alert('Failed to download certificate. Please try again later.');
+                });
+            };
+        } else {
+            certificateButton.style.display = 'none';
+        }
+    }
+
+    const progressBar = document.getElementById('course-progress-bar');
+    if (progressBar) {
+        progressBar.style.width = `${progress}%`;
+    }
+
+    safelySetText('course-progress-text', `${progress}%`);
+    safelySetText('module-count', `(${completedCount}/${totalModules} Modules)`);
 }
 
 function displayModuleList(courseId, modules) {
@@ -841,8 +948,46 @@ function displayModuleList(courseId, modules) {
     });
 }
 
+function displayModuleList(courseId, modules) {
+    const moduleListEl = document.getElementById('module-list');
+    if (!moduleListEl) {
+        console.error('Module list element not found');
+        return;
+    }
+
+    moduleListEl.innerHTML = '';
+
+    if (!modules || modules.length === 0) {
+        moduleListEl.innerHTML = '<li class="no-modules">No modules available</li>';
+        return;
+    }
+
+    modules.forEach(module => {
+        const li = document.createElement('li');
+        li.className = 'module-item';
+        li.dataset.moduleId = module.id;
+        li.innerHTML = `
+            <div class="module-item-info">
+                <span class="module-item-order">Module ${module.order}</span>
+                <span class="module-item-title">${module.title}</span>
+            </div>
+            ${module.isCompleted ? '<i class="fas fa-check-circle completed-icon"></i>' : ''}
+        `;
+        
+        li.addEventListener('click', () => {
+            document.querySelectorAll('.module-item').forEach(item => 
+                item.classList.remove('active')
+            );
+            li.classList.add('active');
+            displayModuleContent(courseId, module);
+        });
+        
+        moduleListEl.appendChild(li);
+    });
+}
+
 function displayModuleContent(courseId, module) {
-    document.getElementById('module-title').innerHTML = `${module.title}`;
+    document.getElementById('module-title').innerHTML = module.title;
     document.getElementById('module-description').innerHTML = module.description;
 
     const pdfContainer = document.getElementById('module-pdf-container');
@@ -852,7 +997,9 @@ function displayModuleContent(courseId, module) {
     
     if (module.videoContent) {
         const videoPlayer = document.createElement('video');
-        videoPlayer.src = `${API_BASE_URL}${module.videoContent}`;
+        videoPlayer.src = module.videoContent.startsWith('http') 
+            ? module.videoContent 
+            : `${API_BASE_URL}${module.videoContent}`;
         videoPlayer.controls = true;
         videoPlayer.style.width = '100%';
         videoPlayer.style.borderRadius = '8px';
@@ -863,50 +1010,80 @@ function displayModuleContent(courseId, module) {
     }
 
     if (module.pdfContent) {
-        document.getElementById('module-pdf-link').href = `${API_BASE_URL}${module.pdfContent}`;
-        document.getElementById('module-pdf-link').textContent = module.pdfOriginalName || module.pdfContent.split('/').pop(); 
+        const pdfLink = document.getElementById('module-pdf-link');
+        if (pdfLink) {
+            pdfLink.href = module.pdfContent.startsWith('http') 
+                ? module.pdfContent 
+                : `${API_BASE_URL}${module.pdfContent}`;
+            pdfLink.textContent = module.pdfOriginalName || module.pdfContent.split('/').pop();
+        }
         pdfContainer.style.display = 'flex';
     } else {
         pdfContainer.style.display = 'none';
     }
 
     const completeBtn = document.getElementById('complete-module-btn');
-    completeBtn.style.display = 'block';
-    
-    if (module.isCompleted) {
-        completeBtn.textContent = 'Completed';
-        completeBtn.classList.add('completed');
-        completeBtn.disabled = true;
-    } else {
-        completeBtn.textContent = 'Mark as Complete';
-        completeBtn.classList.remove('completed');
-        completeBtn.disabled = false;
+    if (completeBtn) {
+        completeBtn.style.display = 'block';
         
-        const newBtn = completeBtn.cloneNode(true);
-        completeBtn.parentNode.replaceChild(newBtn, completeBtn);
+        if (module.isCompleted) {
+            completeBtn.textContent = 'Completed';
+            completeBtn.classList.add('completed');
+            completeBtn.disabled = true;
+        } else {
+            completeBtn.textContent = 'Mark as Complete';
+            completeBtn.classList.remove('completed');
+            completeBtn.disabled = false;
+            
+            const newBtn = completeBtn.cloneNode(true);
+            completeBtn.parentNode.replaceChild(newBtn, completeBtn);
 
-        newBtn.addEventListener('click', () => markModuleAsComplete(courseId, module.id));
+            newBtn.addEventListener('click', () => markModuleAsComplete(courseId, module.id));
+        }
     }
 }
 
 async function markModuleAsComplete(courseId, moduleId) {
     const token = localStorage.getItem('accessToken');
     const btn = document.getElementById('complete-module-btn');
+    
+    if (!token) {
+        alert('No authentication token found. Please login again.');
+        return;
+    }
+    
     btn.textContent = 'Loading...';
     btn.disabled = true;
     
     try {
-        const response = await fetch(`${API_BASE_URL2}/modules/${moduleId}/complete`, {
+        const url = `${API_BASE_URL2}/modules/${moduleId}/complete`;
+        console.log('Making request to:', url);
+        
+        const response = await fetch(url, {
             method: 'PATCH',
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
         
-        if (!response.ok) throw new Error('Gagal menandai modul selesai.');
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Response error:', errorText);
+            throw new Error(`Failed to mark module as complete: ${response.status} ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('Success:', result);
         
         loadCourseAndModules(courseId);
         
     } catch(error) {
-        alert(error.message);
+        console.error('Error completing module:', error);
+        alert(`Error: ${error.message}`);
         btn.textContent = 'Mark as Complete';
         btn.disabled = false;
     }
@@ -1028,7 +1205,7 @@ async function showCourseModal(courseId) {
         document.getElementById('modalCourseTitle').textContent = course.title;
         document.getElementById('modalCourseInstructor').textContent = course.instructor;
         document.getElementById('modalCourseDescription').textContent = course.description;
-        document.getElementById('modalCoursePrice').textContent = `$ ${course.price.toLocaleString('id-ID')}`; // Sekarang ini akan berhasil
+        document.getElementById('modalCoursePrice').textContent = `$ ${course.price.toLocaleString('id-ID')}`;
         
         const topicsContainer = document.getElementById('modalCourseTopics');
         topicsContainer.innerHTML = '';
@@ -1063,7 +1240,7 @@ async function showCourseModal(courseId) {
             loginNotice.style.display = 'none';
             buyButton.style.display = 'block';
         } else if (token) {
-            const myCoursesResponse = await fetch(`${API_BASE_URL2}/courses/my-courses`, {
+            const myCoursesResponse = await fetch(`${API_BASE_URL}/courses/my-courses`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             let isPurchased = false;

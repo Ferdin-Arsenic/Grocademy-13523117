@@ -210,8 +210,30 @@ export class StandaloneModulesController {
 
   @Patch(':id/complete')
   async completeModule(@Param('id') id: string, @Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.modulesService.completeModule(id, user.id);
+    this.logger.debug('Complete module request received', {
+      moduleId: id,
+      user: req.user,
+      headers: req.headers.authorization
+    });
+
+    try {
+      const user = req.user as { id: string };
+      
+      if (!user || !user.id) {
+        this.logger.error('No user found in request');
+        throw new ForbiddenException('Authentication required');
+      }
+      
+      this.logger.debug('Processing completion for', {
+        moduleId: id,
+        userId: user.id
+      });
+      
+      return this.modulesService.completeModule(id, user.id);
+    } catch (error) {
+      this.logger.error('Error in completeModule:', error);
+      throw error;
+    }
   }
 
   @Delete(':id')

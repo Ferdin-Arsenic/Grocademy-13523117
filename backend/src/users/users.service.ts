@@ -80,19 +80,31 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
-    const user = await this.findOne(id); 
-    if (user.role === 'admin') {
+    const userToUpdate = await this.findOne(id);
+    if (userToUpdate.role === 'admin') {
       throw new BadRequestException('Admin account cannot be modified');
     }
+    const { first_name, last_name, ...restOfDto } = updateUserDto as any;
 
-    if (updateUserDto.password) {
-      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    const data: any = { ...restOfDto };
+    if (first_name) {
+      data.firstName = first_name;
     }
-
-    return this.prisma.user.update({
+    if (last_name) {
+      data.lastName = last_name;
+    }
+    if (data.password && data.password.trim() !== '') {
+      data.password = await bcrypt.hash(data.password, 10);
+    } else {
+      delete data.password;
+    }
+    const updatedUser = await this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data,
     });
+
+    const { password, ...result } = updatedUser;
+    return result;
   }
 
   async remove(id: string) {
