@@ -93,12 +93,13 @@ Browser akan otomatis terbuka di `http://127.0.0.1:8080`, dan Anda akan diarahka
 
 ### 4. Akses Aplikasi
 * **Frontend**: `http://localhost:8080` atau `http://127.0.0.1:8080`
-* **Backend API**: `http://localhost:3000/api`
+* **Backend API**: `http://localhost:3000`
 
 ### Akun Admin Default
 Akun admin default dibuat secara otomatis saat pertama kali dijalankan:
 * **Email/Username**: admin@grocademy.com
 * **Password**: admin123
+
 akun admin akan dibuat ulang setiap kali docker compose up
 
 ---
