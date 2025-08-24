@@ -1225,7 +1225,7 @@ async function showCourseModal(courseId) {
 
 
         const modalImage = document.getElementById('modalCourseImage');
-        const imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
+        const imageUrl = course.thumbnail_image || '../assets/placeholder.jpeg';
         modalImage.style.backgroundImage = `url(${imageUrl})`;
 
         const buyButton = document.getElementById('buyNowBtn');
