@@ -4,7 +4,7 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPassword = await bcrypt.hash('adminpassword', 10);
+  const hashedPassword = await bcrypt.hash('admin123', 10);
 
   await prisma.user.deleteMany({ where: { role: 'admin' } });
 
