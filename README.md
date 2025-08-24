@@ -125,7 +125,6 @@ Semua *endpoint* berada di bawah prefix global `/api`.
 
 ### Certificate
 * `GET /certificate/:courseId`: Mengunduh sertifikat dalam format PDF (User).
-
 ---
 
 ## Bonus yang Dikerjakan
