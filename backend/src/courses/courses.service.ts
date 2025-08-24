@@ -16,13 +16,15 @@ export class CoursesService {
   ) {}
 
   private transformCourse(course: any) {
-    if (course && course.thumbnailImage && !course.thumbnailImage.startsWith('http')) {
-      return {
-        ...course,
-        thumbnailImage: `${BASE_URL}${course.thumbnailImage}`
-      };
-    }
-    return course;
+    const transformed = {
+      ...course,
+      thumbnail_image: course.thumbnailImage && !course.thumbnailImage.startsWith('http')
+        ? `${BASE_URL}${course.thumbnailImage}`
+        : course.thumbnailImage,
+    };
+    delete transformed.thumbnailImage;
+
+    return transformed;
   }
 
   async create(createCourseDto: CreateCourseDto, filePath: string | null) {
@@ -53,54 +55,84 @@ export class CoursesService {
     return this.transformCourse(newCourse); 
   }
   
+  // File: courses.service.ts
+
   async findAll(
-    query?: string,
-    page: number = 1,
-    limit: number = 15,
-    sortBy: string = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc',
+      query?: string,
+      page: number = 1,
+      limit: number = 15,
+      sortBy: string = 'createdAt',
+      sortOrder: 'asc' | 'desc' = 'desc',
   ) {
-    const skip = (page - 1) * limit;
-    const whereCondition: Prisma.CourseWhereInput = query
-      ? {
-          OR: [
-            { title: { contains: query, mode: 'insensitive' } },
-            { instructor: { contains: query, mode: 'insensitive' } },
-            { topics: { has: query.toLowerCase() } },
-          ],
-        }
-      : {};
-    const orderBy = { [sortBy]: sortOrder };
+      try {
+          // Kunci cache yang unik berdasarkan parameter query
+          const cacheKey = `ALL_COURSES_${query}_${page}_${limit}_${sortBy}_${sortOrder}`;
 
-    const courses = await this.prisma.course.findMany({
-      where: whereCondition,
-      skip,
-      take: limit,
-      orderBy,
-    });
-    const totalItems = await this.prisma.course.count({ where: whereCondition });
-    
-    const transformedCourses = courses.map(course => this.transformCourse(course));
+          // 1. Coba ambil dari cache terlebih dahulu
+          const cachedData = await this.cacheManager.get(cacheKey);
+          if (cachedData) {
+              return cachedData; // Jika ada, kembalikan data cache
+          }
 
-    const coursesWithModuleCount = await Promise.all(
-        transformedCourses.map(async (course) => {
-            const totalModules = await this.prisma.module.count({
-                where: { courseId: course.id },
-            });
-            return { ...course, total_modules: totalModules };
-        })
-    );
+          // --- Jika tidak ada di cache, lanjutkan ke database ---
 
-    return {
-      status: "success",
-      message: "Courses retrieved successfully",
-      data: coursesWithModuleCount,
-      pagination: {
-        current_page: page,
-        total_pages: Math.ceil(totalItems / limit),
-        total_items: totalItems,
-      },
-    };
+          const skip = (page - 1) * limit;
+          const whereCondition: Prisma.CourseWhereInput = query
+              ? {
+                  OR: [
+                      { title: { contains: query, mode: 'insensitive' } },
+                      { instructor: { contains: query, mode: 'insensitive' } },
+                      { topics: { has: query.toLowerCase() } },
+                  ],
+              }
+              : {};
+
+          const orderBy = { [sortBy]: sortOrder };
+
+          // 2. Ambil kursus DAN jumlah modulnya dalam satu query efisien
+          const courses = await this.prisma.course.findMany({
+              where: whereCondition,
+              skip,
+              take: limit,
+              orderBy,
+              include: {
+                  _count: { // Ini adalah magic dari Prisma untuk menghitung relasi
+                      select: { modules: true },
+                  },
+              },
+          });
+
+          const totalItems = await this.prisma.course.count({ where: whereCondition });
+
+          // 3. Transformasi data SETELAH diambil dari database
+          const transformedCourses = courses.map(course => {
+              const transformed = this.transformCourse(course); // Transformasi URL gambar
+              return {
+                  ...transformed,
+                  total_modules: course._count.modules, // Ambil jumlah modul dari hasil query
+              };
+          });
+
+          // 4. Siapkan data untuk dikirim dan disimpan di cache
+          const response = {
+              status: "success",
+              message: "Courses retrieved successfully",
+              data: transformedCourses,
+              pagination: {
+                  current_page: page,
+                  total_pages: Math.ceil(totalItems / limit),
+                  total_items: totalItems,
+              },
+          };
+
+          // 5. Simpan hasil akhir yang sudah benar ke dalam cache
+          await this.cacheManager.set(cacheKey, response, 300); // Cache selama 5 menit
+
+          return response;
+
+      } catch (error) {
+          throw new BadRequestException(`Failed to retrieve courses: ${error.message}`);
+      }
   }
 
   async findOne(id: string) {
