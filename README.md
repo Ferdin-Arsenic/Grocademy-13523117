@@ -29,37 +29,6 @@ Selamat datang di Grocademy, sebuah platform pembelajaran digital yang dirancang
 
 ---
 
-## Cara Menjalankan Aplikasi
-
-Aplikasi ini telah di-"Dockerize" untuk kemudahan setup. Pastikan Anda memiliki **Docker** dan **Docker Compose** terinstall di sistem Anda.
-
-1.  **Clone Repository**
-    ```bash
-    git clone [https://github.com/Ferdin-Arsenic/Grocademy-13523117.git](https://github.com/Ferdin-Arsenic/Grocademy-13523117.git)
-    cd Grocademy-13523117
-    ```
-
-2.  **Buat File Environment Backend**
-    Buat file `.env` di dalam folder `backend/`.
-    ```bash
-    cd backend
-    echo "DATABASE_URL=\"postgresql://user:password@db:5432/grocademydb?schema=public\"" > .env
-    echo "JWT_SECRET=\"SECRET_KEY_YANG_SANGAT_RAHASIA\"" >> .env
-    cd ..
-    ```
-
-3.  **Jalankan dengan Docker Compose**
-    Dari direktori utama proyek, jalankan perintah berikut. Perintah ini akan membangun *image*, menjalankan migrasi & *seeding* database, dan menyalakan semua layanan secara otomatis.
-    ```bash
-    docker compose up --build
-    ```
-
-4.  **Akses Aplikasi**
-    * **Frontend Pengguna**: Buka browser dan akses `http://localhost:8080`.
-    * **Backend API**: Server berjalan di `http://localhost:3000/api`.
-
----
-
 ## Technology Stack
 
 ### Backend
@@ -70,6 +39,7 @@ Aplikasi ini telah di-"Dockerize" untuk kemudahan setup. Pastikan Anda memiliki 
 * **Otentikasi**: JWT (JSON Web Tokens)
 * **File Upload**: Multer
 * **PDF Generation**: PDFKit
+* **Caching**: Redis
 
 ### Frontend
 * **Bahasa**: Vanilla HTML, CSS, JavaScript (ES6+)
@@ -81,13 +51,54 @@ Aplikasi ini telah di-"Dockerize" untuk kemudahan setup. Pastikan Anda memiliki 
 
 ---
 
-## Design Pattern yang Digunakan
+## Cara Menjalankan Aplikasi
 
-Proyek ini mengimplementasikan beberapa design pattern untuk memastikan kode yang bersih, terstruktur, dan mudah dikelola:
+Aplikasi ini telah di-"Dockerize" untuk kemudahan setup. Pastikan Anda memiliki **Docker** dan **Docker Compose** terinstall di sistem Anda.
 
-1.  **Singleton Pattern**: `PrismaService` diimplementasikan sebagai *singleton* oleh NestJS. Ini memastikan bahwa hanya ada satu koneksi ke database di seluruh aplikasi, yang meningkatkan efisiensi dan mencegah kebocoran koneksi.
-2.  **Repository Pattern (via Prisma)**: Prisma Client bertindak sebagai lapisan abstraksi (Repository) antara logika bisnis (*service*) dan database. Ini memisahkan cara data diakses dari logika aplikasi, sehingga jika suatu saat database diganti, perubahan pada *service* akan minimal.
-3.  **Decorator Pattern**: Digunakan secara ekstensif oleh NestJS untuk fungsionalitas seperti *routing* (`@Controller`, `@Get`, `@Post`), validasi (`@Body`), dan keamanan (`@UseGuards`, `@Roles`). Ini memungkinkan kita untuk menambahkan fungsionalitas ke kelas atau metode secara deklaratif tanpa mengubah logika intinya.
+### 1. Clone Repository
+```bash
+git clone https://github.com/Ferdin-Arsenic/Grocademy-13523117.git
+cd Grocademy-13523117
+```
+
+### 2. Buat File Environment Backend
+Buat file `.env` di dalam folder `backend/`.
+```bash
+cd backend
+echo "DATABASE_URL=\"postgresql://user:password@db:5432/grocademydb?schema=public\"" > .env
+echo "JWT_SECRET=\"SECRET_KEY_YANG_SANGAT_RAHASIA\"" >> .env
+echo "REDIS_HOST=\"cache\"" >> .env
+echo "REDIS_PORT=6379" >> .env
+cd ..
+```
+
+### 3. Jalankan Aplikasi (Alur Kerja 2 Terminal)
+
+**Terminal 1 - Menjalankan Backend & Database**
+Buka terminal pertama di direktori utama proyek, lalu jalankan:
+```bash
+docker compose up --build
+```
+
+Biarkan terminal ini berjalan. Perintah ini akan membangun *image*, menjalankan migrasi & *seeding* database secara otomatis, dan menyalakan server backend.
+
+**Terminal 2 - Menjalankan Frontend**
+Buka terminal baru, lalu jalankan:
+```bash
+cd frontend
+live-server
+```
+
+Browser akan otomatis terbuka di `http://127.0.0.1:8080`, dan Anda akan diarahkan ke halaman login.
+
+### 4. Akses Aplikasi
+* **Frontend**: `http://localhost:8080` atau `http://127.0.0.1:8080`
+* **Backend API**: `http://localhost:3000/api`
+
+### Akun Admin Default
+Akun admin default dibuat secara otomatis saat pertama kali dijalankan:
+* **Email/Username**: admin@grocademy.com
+* **Password**: adminpassword
 
 ---
 
@@ -95,40 +106,125 @@ Proyek ini mengimplementasikan beberapa design pattern untuk memastikan kode yan
 
 Semua *endpoint* berada di bawah prefix global `/api`.
 
-### Auth
-* `POST /auth/register`: Mendaftarkan pengguna baru.
-* `POST /auth/login`: Login pengguna dan mendapatkan JWT.
-* `GET /auth/self`: Mendapatkan detail pengguna yang sedang login.
+### Auth (`/api/auth`)
+* `POST /register`: Mendaftarkan pengguna baru.
+* `POST /login`: Login pengguna dan mendapatkan JWT.
+* `GET /self`: Mendapatkan detail pengguna yang sedang login.
 
-### Courses
-* `GET /courses`: Menampilkan semua kursus (publik, dengan search, sort, & pagination).
-* `GET /courses/:id`: Menampilkan detail satu kursus.
-* `POST /courses`: Membuat kursus baru (Admin).
-* `PUT /courses/:id`: Memperbarui kursus (Admin).
-* `DELETE /courses/:id`: Menghapus kursus (Admin, soft delete).
-* `POST /courses/:id/buy`: Membeli kursus (User).
-* `GET /courses/user/my-courses`: Menampilkan semua kursus yang sudah dibeli (User).
-* `GET /courses/:id/modules`: Menampilkan semua modul dari kursus yang sudah dibeli (User).
+### Users (`/api/users`)
+* `GET /`: Menampilkan semua pengguna (Admin).
+* `GET /:id`: Menampilkan detail satu pengguna (Admin).
+* `POST /:id/balance`: Menambah saldo ke pengguna (Admin).
+* `PATCH /:id`: Memperbarui data pengguna (Admin).
+* `DELETE /:id`: Menghapus pengguna (Admin).
 
-### Modules
-* `POST /modules`: Membuat modul baru (Admin).
-* `PATCH /modules/reorder`: Mengubah urutan modul (Admin).
-* `PATCH /modules/:id/complete`: Menandai modul sebagai selesai (User).
+### Courses (`/api/courses`)
+* `GET /`: Menampilkan semua kursus (publik, dengan search, sort, & pagination).
+* `GET /:id`: Menampilkan detail satu kursus.
+* `POST /`: Membuat kursus baru dengan gambar (Admin).
+* `PATCH /:id`: Memperbarui kursus (Admin).
+* `DELETE /:id`: "Menghapus" kursus dengan metode soft delete (Admin).
+* `POST /:id/buy`: Membeli kursus (User).
+* `GET /user/my-courses`: Menampilkan semua kursus yang sudah dibeli (User).
+* `GET /:id/modules`: Menampilkan semua modul dari kursus yang sudah dibeli (User).
 
-### Users
-* `GET /users`: Menampilkan semua pengguna (Admin).
-* `POST /users/:id/balance`: Menambah saldo ke pengguna (Admin).
+### Modules (`/api/modules`)
+* `POST /`: Membuat modul baru dengan PDF dan/atau Video (Admin).
+* `GET /:id`: Menampilkan detail satu modul.
+* `PATCH /:id`: Memperbarui modul (Admin).
+* `DELETE /:id`: Menghapus modul (Admin).
+* `POST /reorder`: Mengubah urutan modul (Admin).
+* `PATCH /:id/complete`: Menandai modul sebagai selesai (User).
 
-### Bookmarks
-* `GET /bookmarks`: Menampilkan kursus yang di-*bookmark* (User).
-* `POST /bookmarks/:courseId`: Menambah/menghapus *bookmark* (User).
+### Bookmarks (`/api/bookmarks`)
+* `GET /`: Menampilkan kursus yang di-*bookmark* (User).
+* `POST /:courseId`: Menambah/menghapus *bookmark* (User).
 
-### Certificate
-* `GET /certificate/:courseId`: Mengunduh sertifikat dalam format PDF (User).
+### Certificate (`/api/certificate`)
+* `GET /:courseId`: Mengunduh sertifikat dalam format PDF (User).
+
+---
+
+## Design Pattern yang Digunakan
+
+1. **Singleton Pattern**: `PrismaService` dan semua service lain di NestJS diimplementasikan sebagai *singleton*. Ini memastikan hanya ada satu instans dari setiap service yang digunakan di seluruh aplikasi, yang meningkatkan efisiensi dan konsistensi.
+
+2. **Repository Pattern (via Prisma)**: Prisma Client bertindak sebagai lapisan abstraksi (Repository) antara logika bisnis (*service*) dan database. Ini memisahkan cara data diakses dari logika aplikasi, membuat kode lebih mudah diuji dan dikelola.
+
+3. **Decorator Pattern**: Digunakan secara ekstensif oleh NestJS untuk fungsionalitas seperti *routing* (`@Controller`, `@Get`), validasi (`@Body`), dan keamanan (`@UseGuards`, `@Roles`), memungkinkan penambahan fungsionalitas secara deklaratif.
+
 ---
 
 ## Bonus yang Dikerjakan
 
-1.  **B03 - Polling**: Halaman *Browse Course* akan otomatis memeriksa kursus baru setiap 5 detik dan menampilkannya tanpa perlu *refresh*.
-2.  **B04 - Caching**: *Endpoint* `GET /courses` menggunakan Redis untuk *caching* guna mempercepat waktu respons pada permintaan berulang. Invalidasi *cache* terjadi secara otomatis saat ada perubahan data kursus.
-3.  **B10 - Fitur Tambahan (Bookmark)**: Pengguna bisa menyimpan kursus yang mereka minati dengan fitur *bookmark*.
+1. **B03 - Polling**: Halaman *Browse Course* akan otomatis memeriksa kursus baru setiap 5 detik dan menampilkannya tanpa perlu *refresh*.
+
+2. **B04 - Caching**: *Endpoint* `GET /courses` menggunakan Redis untuk *caching* guna mempercepat waktu respons pada permintaan berulang. Invalidasi *cache* terjadi secara otomatis saat ada perubahan data kursus.
+
+3. **B10 - Fitur Tambahan (Bookmark)**: Pengguna yang sudah login dapat menyimpan kursus yang mereka minati dengan fitur *bookmark*.
+
+---
+
+## Struktur Database
+
+### Tabel User
+- id, email, name, password, role, balance, createdAt, updatedAt
+
+### Tabel Course
+- id, title, description, price, imageUrl, createdAt, updatedAt, deletedAt
+
+### Tabel Module
+- id, courseId, title, contentType, contentUrl, order, createdAt, updatedAt
+
+### Tabel UserCourse (Pembelian Kursus)
+- id, userId, courseId, purchaseDate
+
+### Tabel UserModuleProgress (Progress Modul)
+- id, userId, moduleId, completedAt
+
+### Tabel Bookmark
+- id, userId, courseId, createdAt
+
+---
+
+## Fitur Utama
+
+### Untuk User
+- Registrasi dan login dengan JWT authentication
+- Browse kursus dengan pencarian dan pagination
+- Membeli kursus menggunakan saldo
+- Melihat kursus yang sudah dibeli
+- Mengakses modul dari kursus yang dibeli
+- Menandai modul sebagai selesai
+- Menyimpan kursus favorit dengan bookmark
+- Download sertifikat setelah menyelesaikan kursus
+
+### Untuk Admin
+- Login dengan akun admin
+- Mengelola semua pengguna
+- Menambah saldo pengguna
+- Membuat, mengubah, dan menghapus kursus
+- Membuat, mengubah, dan menghapus modul
+- Upload gambar untuk kursus
+- Upload PDF dan video untuk modul
+- Mengatur urutan modul dalam kursus
+
+---
+
+## Security Features
+
+- JWT Token authentication
+- Role-based access control (Admin/User)
+- Password hashing menggunakan bcrypt
+- Input validation dan sanitization
+- Protected routes berdasarkan peran pengguna
+
+---
+
+## Performance Features
+
+- Redis caching untuk endpoint courses
+- Efficient database queries dengan Prisma
+- Optimized image serving
+- Pagination untuk large datasets
+- Soft delete untuk data integrity
