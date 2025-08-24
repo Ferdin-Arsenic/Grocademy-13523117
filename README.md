@@ -23,7 +23,7 @@ Selamat datang di Grocademy, sebuah platform pembelajaran digital yang dirancang
 
 ---
 
-## Identitas Diri
+## Author
 * **Nama**: Ferdin Arsenarendra Purtadi
 * **NIM**: 13523117
 
