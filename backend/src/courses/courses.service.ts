@@ -6,6 +6,7 @@ import { Prisma } from '@prisma/client';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { NotFoundException, BadRequestException, ForbiddenException, ConflictException } from '@nestjs/common';
+const BASE_URL = 'http://localhost:3000'; 
 
 @Injectable()
 export class CoursesService {
@@ -13,6 +14,16 @@ export class CoursesService {
     private prisma: PrismaService,
     @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) {}
+
+  private transformCourse(course: any) {
+    if (course && course.thumbnailImage && !course.thumbnailImage.startsWith('http')) {
+      return {
+        ...course,
+        thumbnailImage: `${BASE_URL}${course.thumbnailImage}`
+      };
+    }
+    return course;
+  }
 
   async create(createCourseDto: CreateCourseDto, filePath: string | null) {
     const existingCourse = await this.prisma.course.findFirst({
@@ -30,14 +41,16 @@ export class CoursesService {
 
     const topicsLowerCase = createCourseDto.topics.map(topic => topic.toLowerCase());
     await this.cacheManager.del('ALL_COURSES');
-    return this.prisma.course.create({
+
+    const newCourse = await this.prisma.course.create({
       data: {
         ...createCourseDto,
-        topics: topicsLowerCase, 
+        topics: topicsLowerCase,
         price: Number(createCourseDto.price), 
         thumbnailImage: filePath,
       },
     });
+    return this.transformCourse(newCourse); 
   }
   
   async findAll(
@@ -48,7 +61,6 @@ export class CoursesService {
     sortOrder: 'asc' | 'desc' = 'desc',
   ) {
     const skip = (page - 1) * limit;
-
     const whereCondition: Prisma.CourseWhereInput = query
       ? {
           OR: [
@@ -58,60 +70,6 @@ export class CoursesService {
           ],
         }
       : {};
-
-    const orderBy = {
-      [sortBy]: sortOrder,
-    };
-
-    const courses = await this.prisma.course.findMany({
-      where: whereCondition,
-      skip,
-      take: limit,
-      orderBy,
-    });
-
-    const totalItems = await this.prisma.course.count({ where: whereCondition });
-
-    return {
-      data: courses,
-      pagination: {
-        current_page: page,
-        total_pages: Math.ceil(totalItems / limit),
-        total_items: totalItems,
-      },
-    };
-  }
-
-  async findAllForUser(
-    userId: string,
-    query?: string,
-    page: number = 1,
-    limit: number = 15,
-    sortBy: string = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc',
-  ) {
-    const skip = (page - 1) * limit;
-
-    const userPurchases = await this.prisma.userCourse.findMany({
-        where: { userId },
-        select: { courseId: true },
-    });
-    const purchasedCourseIds = userPurchases.map(p => p.courseId);
-
-    const whereCondition: Prisma.CourseWhereInput = {
-      // Filter dasar untuk pencarian
-      ...(query && {
-        OR: [
-          { title: { contains: query, mode: 'insensitive' } },
-          { instructor: { contains: query, mode: 'insensitive' } },
-          { topics: { has: query.toLowerCase() } },
-        ],
-      }),
-      id: {
-        notIn: purchasedCourseIds,
-      },
-    };
-
     const orderBy = { [sortBy]: sortOrder };
 
     const courses = await this.prisma.course.findMany({
@@ -120,11 +78,23 @@ export class CoursesService {
       take: limit,
       orderBy,
     });
-
     const totalItems = await this.prisma.course.count({ where: whereCondition });
+    
+    const transformedCourses = courses.map(course => this.transformCourse(course));
+
+    const coursesWithModuleCount = await Promise.all(
+        transformedCourses.map(async (course) => {
+            const totalModules = await this.prisma.module.count({
+                where: { courseId: course.id },
+            });
+            return { ...course, total_modules: totalModules };
+        })
+    );
 
     return {
-      data: courses,
+      status: "success",
+      message: "Courses retrieved successfully",
+      data: coursesWithModuleCount,
       pagination: {
         current_page: page,
         total_pages: Math.ceil(totalItems / limit),
@@ -133,60 +103,53 @@ export class CoursesService {
     };
   }
 
-  async findModulesForUser(courseId: string, userId: string) {
-    const purchase = await this.prisma.userCourse.findUnique({
-      where: {
-        userId_courseId: {
-          userId: userId,
-          courseId: courseId,
-        },
-      },
-    });
-
-    if (!purchase) {
-      throw new ForbiddenException("You have not purchased this course.");
-    }
-
-    const modules = await this.prisma.module.findMany({
-      where: { courseId },
-      orderBy: { order: 'asc' },
-    });
-
-    const completions = await this.prisma.userModuleCompletion.findMany({
-      where: {
-        userId: userId,
-        moduleId: { in: modules.map((m) => m.id) },
-      },
-    });
-
-    const completedModuleIds = new Set(completions.map((c) => c.moduleId));
-    const modulesWithCompletion = modules.map((module) => ({
-      ...module,
-      isCompleted: completedModuleIds.has(module.id),
-    }));
-
-    return modulesWithCompletion;
-  }
-
   async findOne(id: string) {
     const course = await this.prisma.course.findUnique({
       where: { id },
       include: {
-        modules: {
-          orderBy: {
-            order: 'asc',
-          },
-        },
+        _count: {
+            select: { modules: true }
+        }
       },
     });
 
     if (!course) {
       throw new NotFoundException(`Course with ID ${id} not found`);
     }
-    return course;
+    
+    const { _count, ...courseData } = course;
+    return {
+        status: "success",
+        message: "Course retrieved successfully",
+        data: this.transformCourse({
+            ...courseData,
+            total_modules: _count.modules
+        })
+    };
+  }
+  
+
+  async findAllForUser( userId: string, query?: string, page: number = 1, limit: number = 15, sortBy: string = 'createdAt', sortOrder: 'asc' | 'desc' = 'desc') {
+    const skip = (page - 1) * limit;
+    const userPurchases = await this.prisma.userCourse.findMany({ where: { userId }, select: { courseId: true } });
+    const purchasedCourseIds = userPurchases.map(p => p.courseId);
+    const whereCondition: Prisma.CourseWhereInput = { ...(query && { OR: [ { title: { contains: query, mode: 'insensitive' } }, { instructor: { contains: query, mode: 'insensitive' } }, { topics: { has: query.toLowerCase() } }, ], }), id: { notIn: purchasedCourseIds, }, };
+    const orderBy = { [sortBy]: sortOrder };
+    const courses = await this.prisma.course.findMany({ where: whereCondition, skip, take: limit, orderBy });
+    const totalItems = await this.prisma.course.count({ where: whereCondition });
+    const transformedCourses = courses.map(this.transformCourse);
+    return { data: transformedCourses, pagination: { current_page: page, total_pages: Math.ceil(totalItems / limit), total_items: totalItems, }, };
+  }
+  async findModulesForUser(courseId: string, userId: string) {
+    const purchase = await this.prisma.userCourse.findUnique({ where: { userId_courseId: { userId: userId, courseId: courseId, }, }, });
+    const modules = await this.prisma.module.findMany({ where: { courseId }, orderBy: { order: 'asc' }, });
+    const completions = await this.prisma.userModuleCompletion.findMany({ where: { userId: userId, moduleId: { in: modules.map((m) => m.id) }, }, });
+    const completedModuleIds = new Set(completions.map((c) => c.moduleId));
+    const modulesWithCompletion = modules.map((module) => ({ ...module, isCompleted: completedModuleIds.has(module.id), }));
+    return modulesWithCompletion;
   }
 
-  async buyCourse(courseId: string, userId: string) {
+async buyCourse(courseId: string, userId: string) {
     const [course, user] = await Promise.all([
       this.prisma.course.findUnique({ where: { id: courseId } }),
       this.prisma.user.findUnique({ where: { id: userId } }),
@@ -210,7 +173,14 @@ export class CoursesService {
       throw new BadRequestException('Insufficient balance');
     }
 
-    const [updatedUser] = await this.prisma.$transaction([
+    await this.prisma.userCourseBookmark.deleteMany({
+      where: {
+        userId: userId,
+        courseId: courseId,
+      },
+    });
+
+    const [updatedUser, newPurchase] = await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
         data: { balance: { decrement: course.price } },
@@ -224,8 +194,13 @@ export class CoursesService {
     ]);
 
     return {
-      message: 'Course purchased successfully',
-      new_balance: updatedUser.balance,
+      status: "success",
+      message: 'Course purchased successfully and removed from bookmarks.',
+      data: {
+        course_id: courseId,
+        user_balance: updatedUser.balance,
+        transaction_id: newPurchase.id 
+      }
     };
   }
 
@@ -268,22 +243,21 @@ export class CoursesService {
       }),
     );
 
-    return coursesWithProgress;
-  }
+    const transformedCourses = coursesWithProgress.map(course => this.transformCourse(course));
 
+
+    return {
+        status: "success",
+        message: "My courses retrieved successfully",
+        data: transformedCourses,
+    };
+  }
   async update(id: string, updateCourseDto: UpdateCourseDto) {
-    if (updateCourseDto.topics) {
-      updateCourseDto.topics = updateCourseDto.topics.map(topic => topic.toLowerCase());
-    }
-
+    if (updateCourseDto.topics) { updateCourseDto.topics = updateCourseDto.topics.map(topic => topic.toLowerCase()); }
     await this.cacheManager.del('ALL_COURSES');
-    
-    return this.prisma.course.update({
-      where: { id },
-      data: updateCourseDto,
-    });
+    const updatedCourse = await this.prisma.course.update({ where: { id }, data: updateCourseDto, });
+    return this.transformCourse(updatedCourse);
   }
-
   async remove(id: string) {
     const course = await this.prisma.course.findUnique({
       where: { id },
@@ -293,7 +267,6 @@ export class CoursesService {
     if (!course) {
       throw new NotFoundException(`Course with ID ${id} not found`);
     }
-
     const purchases = await this.prisma.userCourse.findMany({
       where: { courseId: id },
       select: { userId: true },
@@ -312,17 +285,16 @@ export class CoursesService {
         });
       }
 
-      await prisma.userCourse.deleteMany({
-        where: { courseId: id },
-      });
-
-      await prisma.course.delete({
-        where: { id },
-      });
+      await prisma.userCourseBookmark.deleteMany({ where: { courseId: id } });
+      await prisma.userModuleCompletion.deleteMany({ where: { module: { courseId: id } } });
+      await prisma.userCourse.deleteMany({ where: { courseId: id } });
+      await prisma.module.deleteMany({ where: { courseId: id } });
+      
+      await prisma.course.delete({ where: { id } });
     });
 
     await this.cacheManager.del('ALL_COURSES');
 
-    return { message: `Course with ID ${id} and all related purchases have been deleted. Refunds have been issued.` };
+    return { message: `Course with ID ${id} and all related data have been deleted. Refunds have been issued.` };
   }
 }

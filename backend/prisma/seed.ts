@@ -4,12 +4,10 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-  const hashedPassword = await bcrypt.hash('adminpassword', 10); // Ganti dengan password yang aman
+  const hashedPassword = await bcrypt.hash('adminpassword', 10);
 
-  // Hapus admin lama jika ada, untuk menghindari duplikat
   await prisma.user.deleteMany({ where: { role: 'admin' } });
 
-  // Buat user admin baru
   const admin = await prisma.user.create({
     data: {
       email: 'admin@grocademy.com',
@@ -17,7 +15,7 @@ async function main() {
       firstName: 'Admin',
       lastName: 'Grocademy',
       password: hashedPassword,
-      role: 'admin', // <-- Kunci penting untuk membedakan admin
+      role: 'admin',
     },
   });
 

@@ -1,11 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, DefaultValuePipe, ParseIntPipe, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, DefaultValuePipe, ParseIntPipe, Req, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/guards/roles.decorator';
 import { CoursesService } from './courses.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
-import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -27,13 +26,28 @@ export class CoursesController {
       },
     }),
   }))
-
   create(
     @Body() createCourseDto: CreateCourseDto,
     @UploadedFile() file: Express.Multer.File,
   ) {
     const filePath = file ? `/uploads/course-thumbnails/${file.filename}` : null;
+    if (createCourseDto.topics && typeof createCourseDto.topics === 'string') {
+      (createCourseDto.topics as any) = (createCourseDto.topics as string)
+        .split(',')
+        .map(topic => topic.trim())
+        .filter(topic => topic.length > 0); 
+    } else if (!createCourseDto.topics) {
+      (createCourseDto.topics as any) = [];
+    }
+
     return this.coursesService.create(createCourseDto, filePath);
+  }
+
+  @Get('my-courses')
+  @UseGuards(JwtAuthGuard)
+  findMyCourses(@Req() req: Request) {
+    const user = req.user as { id: string };
+    return this.coursesService.findMyCourses(user.id);
   }
 
   @Get('for-user')
@@ -52,7 +66,7 @@ export class CoursesController {
 
   @Get()
   @UseInterceptors(CacheInterceptor)
-  @CacheTTL(300) 
+  @CacheTTL(30) 
   @CacheKey('ALL_COURSES') 
   findAll(
     @Query('q') query?: string,
@@ -63,14 +77,7 @@ export class CoursesController {
   ) {
     return this.coursesService.findAll(query, page, limit, sortBy, sortOrder);
   }
-
-  @Get(':id/modules')
-  @UseGuards(JwtAuthGuard)
-  findModulesForUser(@Param('id') id: string, @Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.coursesService.findModulesForUser(id, user.id);
-  }
-
+  
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.coursesService.findOne(id);
@@ -81,13 +88,6 @@ export class CoursesController {
   buyCourse(@Param('id') id: string, @Req() req: Request) {
     const user = req.user as { id: string };
     return this.coursesService.buyCourse(id, user.id);
-  }
-
-  @Get('user/my-courses')
-  @UseGuards(JwtAuthGuard)
-  findMyCourses(@Req() req: Request) {
-    const user = req.user as { id: string };
-    return this.coursesService.findMyCourses(user.id);
   }
 
   @Patch(':id')

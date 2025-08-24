@@ -1,3 +1,3 @@
 export class AddBalanceDto {
-  amount: number;
+  increment: number;
 }

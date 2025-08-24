@@ -11,23 +11,17 @@ export class AuthService {
 
   async register(registerUserDto: RegisterUserDto) {
     const hashedPassword = await bcrypt.hash(registerUserDto.password, 10);
-
-      try {
-        const { firstName, lastName, email, username } = registerUserDto;
-        const user = await this.prisma.user.create({
-          data: {
-            firstName,
-            lastName,
-            email,
-            username,
-            password: hashedPassword,
-          },
-        });
-
-      const payload = { sub: user.id, username: user.username, role: user.role };
-      return {
-        accessToken: await this.jwtService.signAsync(payload),
-      };
+    try {
+      const { firstName, lastName, email, username } = registerUserDto;
+      const user = await this.prisma.user.create({
+        data: {
+          firstName,
+          lastName,
+          email,
+          username,
+          password: hashedPassword,
+        },
+      });
     } catch (error) {
       if (error.code === 'P2002') {
         throw new ConflictException('Username or email already exists');
@@ -50,8 +44,15 @@ export class AuthService {
       throw new UnauthorizedException('Invalid identifier or password');
     }
     const payload = { sub: user.id, username: user.username, role: user.role };
+    const token = await this.jwtService.signAsync(payload);
+
     return {
-      accessToken: await this.jwtService.signAsync(payload),
+      status: "success",
+      message: "Login successful",
+      data: {
+        username: user.username,
+        token: token
+      }
     };
   }
 }

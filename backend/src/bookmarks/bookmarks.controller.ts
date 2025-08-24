@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/guards/auth.guard';
 import type { Request } from 'express';
 
 @Controller('bookmarks')
-@UseGuards(JwtAuthGuard) // Semua endpoint di sini butuh login
+@UseGuards(JwtAuthGuard)
 export class BookmarksController {
   constructor(private readonly bookmarksService: BookmarksService) {}
 

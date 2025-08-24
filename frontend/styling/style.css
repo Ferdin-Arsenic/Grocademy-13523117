@@ -628,6 +628,10 @@ body.my-courses-page {
     line-height: 1;
 }
 
+.balance-amount::before {
+    content: '$ ';
+}
+
 .auth-links {
     display: flex;
     gap: 8px;

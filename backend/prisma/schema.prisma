@@ -59,13 +59,14 @@ model Module {
 }
 
 model UserCourse {
-  userId   String
-  courseId String
-  user     User     @relation(fields: [userId], references: [id])
-  course   Course   @relation(fields: [courseId], references: [id])
-  purchasedAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  course    Course   @relation(fields: [courseId], references: [id])
+  courseId  String
+  createdAt DateTime @default(now())
 
-  @@id([userId, courseId])
+  @@unique([userId, courseId])
 }
 
 model UserModuleCompletion {

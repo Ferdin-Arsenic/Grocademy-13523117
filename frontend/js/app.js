@@ -1,4 +1,5 @@
 const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL2 = 'http://localhost:3000/api';
 
 let currentSortBy = 'title';
 let currentSortOrder = 'desc';
@@ -19,36 +20,45 @@ const messageDiv = document.getElementById('message');
 if (registerForm) {
     registerForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+
+        const submitButton = registerForm.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = 'Registering...';
+
         const formData = new FormData(registerForm);
         const data = Object.fromEntries(formData.entries());
 
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/register`, { 
+            const response = await fetch(`${API_BASE_URL2}/auth/register`, { 
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
-             });
-            const result = await response.json();
+            });
+
             if (!response.ok) {
+                const result = await response.json();
                 throw new Error(result.message || 'Registrasi gagal');
             }
+            messageDiv.textContent = 'Registration succeed! Redirecting to login...';
+            messageDiv.classList.add('show', 'success');
 
-            localStorage.setItem('accessToken', result.accessToken);
-
-            messageDiv.textContent = 'Registration succeed!';
-            messageDiv.style.color = 'green';
             setTimeout(() => {
                 window.location.href = 'login.html';
-            }, 1000);
+            }, 1500);
 
         } catch (error) {
+            messageDiv.classList.add('show', 'error');
             messageDiv.style.color = 'red';
             if (error.message.toLowerCase().includes('already exists')) {
                 messageDiv.innerHTML = `Email or Username is already exist. <a href="login.html">Login di sini</a>.`;
             } else {
                 messageDiv.textContent = error.message;
             }
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Register';
         }
+
     });
 }
 
@@ -59,7 +69,7 @@ if (loginForm) {
         const data = Object.fromEntries(formData.entries());
 
         try {
-            const response = await fetch(`${API_BASE_URL}/auth/login`, {
+            const response = await fetch(`${API_BASE_URL2}/auth/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data),
@@ -71,7 +81,7 @@ if (loginForm) {
                 throw new Error(result.message || 'Login failed');
             }
 
-            localStorage.setItem('accessToken', result.accessToken);
+            localStorage.setItem('accessToken', result.data.token);
             
             messageDiv.textContent = 'Login succeed!';
             messageDiv.style.color = 'green';
@@ -387,13 +397,14 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
     courseListContainer.innerHTML = '<p>Loading your courses...</p>';
 
     try {
-        const url = new URL(`${API_BASE_URL}/courses/user/my-courses`);
+        const url = new URL(`${API_BASE_URL2}/courses/my-courses`);
         const response = await fetch(url, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) throw new Error('Gagal memuat data kursus Anda');
 
-        let allCourses = await response.json();
+        const result = await response.json();
+        let allCourses = result.data; 
 
         if (query) {
             const lowercasedQuery = query.toLowerCase();
@@ -428,10 +439,11 @@ async function loadMyCourses(page = 1, limit = 10, query = '', sortBy = 'progres
 
         if (courses && courses.length > 0) {
             courses.forEach(course => {
+                const imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
                 const myCourseCardHTML = `
                     <div class="course-card" data-course-id="${course.id}">
                         <div class="course-image">
-                            <img src="${course.thumbnailImage ? API_BASE_URL + course.thumbnailImage : '../assets/placeholder.jpeg'}" alt="${course.title}">
+                            <img src="${imageUrl}" alt="${course.title}">
                         </div>
                         <div class="course-content">
                             <h3 class="course-title">${course.title}</h3>
@@ -465,7 +477,7 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
     courseListContainer.innerHTML = '<p>Loading bookmarked courses...</p>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/bookmarks`, {
+        const response = await fetch(`${API_BASE_URL2}/bookmarks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -506,11 +518,7 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
         
         if (courses && courses.length > 0) {
             courses.forEach(course => {
-                let imageUrl = '../assets/placeholder.jpeg'; 
-                if (course.thumbnailImage) {
-                    const cleanPath = course.thumbnailImage.replace(/^\/+/, '');
-                    imageUrl = `${API_BASE_URL}/${cleanPath}`;
-                }
+                let imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
 
                 const courseCardHTML = `
                     <div class="course-card" data-course-id="${course.id}">
@@ -521,7 +529,7 @@ async function loadBookmarks(page = 1, limit = 10, query = '') {
                             <h3 class="course-title">${course.title}</h3>
                             <p class="course-instructor">by ${course.instructor}</p>
                             <div class="course-footer">
-                                <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
+                                <span class="course-price">$ ${course.price.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                         <button class="bookmark-btn bookmarked" onclick="toggleBookmark('${course.id}', this)" title="Remove from bookmarks">
@@ -552,7 +560,7 @@ async function loadUserBookmarks() {
     if (!token) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/bookmarks`, {
+        const response = await fetch(`${API_BASE_URL2}/bookmarks`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -576,7 +584,7 @@ async function loadUserData() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/self`, {
+        const response = await fetch(`${API_BASE_URL2}/auth/self`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -611,7 +619,7 @@ async function loadUserDataWithoutRedirect() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/auth/self`, {
+        const response = await fetch(`${API_BASE_URL2}/auth/self`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -645,7 +653,7 @@ async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
     if (!courseListContainer) return;
 
     const token = localStorage.getItem('accessToken');
-    const endpoint = token ? `${API_BASE_URL}/courses/for-user` : `${API_BASE_URL}/courses`;
+    const endpoint = token ? `${API_BASE_URL2}/courses/for-user` : `${API_BASE_URL2}/courses`;
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
     if (!silent) {
@@ -681,11 +689,7 @@ async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
         
         if (data && data.length > 0) {
             data.forEach(course => {
-                let imageUrl = '../assets/placeholder.jpeg';
-                if (course.thumbnailImage) {
-                    const cleanPath = course.thumbnailImage.replace(/^\/+/, '');
-                    imageUrl = `${API_BASE_URL}/${cleanPath}`;
-                }
+                let imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
 
                 const isBookmarked = userBookmarks.has(course.id);
                 const bookmarkButtonHTML = token ? `
@@ -705,7 +709,7 @@ async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
                             <h3 class="course-title">${course.title}</h3>
                             <p class="course-instructor">by ${course.instructor}</p>
                             <div class="course-footer">
-                                <span class="course-price">Rp ${course.price.toLocaleString('id-ID')}</span>
+                                <span class="course-price">$ ${course.price.toLocaleString('id-ID')}</span>
                             </div>
                         </div>
                         ${bookmarkButtonHTML}
@@ -737,6 +741,8 @@ async function loadCourses(page = 1, limit = 15, query = '', silent = false) {
     }
 }
 
+// app.js
+
 async function loadCourseAndModules(courseId) {
     const token = localStorage.getItem('accessToken');
     if (!token) {
@@ -745,17 +751,21 @@ async function loadCourseAndModules(courseId) {
     }
     
     try {
-        const courseRes = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+        // --- START OF FIX ---
+        // Add the '/courses/' prefix to the URLs
+        const courseRes = await fetch(`${API_BASE_URL2}/courses/${courseId}`, {
              headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!courseRes.ok) throw new Error('Failed to load the course detail.');
-        const course = await courseRes.json();
+        const result = await courseRes.json();
+        const course = result.data;
 
-        const modulesRes = await fetch(`${API_BASE_URL}/courses/${courseId}/modules`, {
+        const modulesRes = await fetch(`${API_BASE_URL2}/courses/${courseId}/modules`, {
              headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!modulesRes.ok) throw new Error('Failed to load module.');
         let modules = await modulesRes.json();
+        // --- END OF FIX ---
 
         displayCourseDetails(course, modules);
         displayModuleList(courseId, modules);
@@ -780,7 +790,7 @@ function displayCourseDetails(course, modules) {
         certificateButton.style.display = 'inline-flex';
         certificateButton.onclick = () => {
             const token = localStorage.getItem('accessToken');
-            fetch(`${API_BASE_URL}/certificate/${course.id}`, {
+            fetch(`${API_BASE_URL2}/certificate/${course.id}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             })
             .then(res => res.blob())
@@ -886,7 +896,7 @@ async function markModuleAsComplete(courseId, moduleId) {
     btn.disabled = true;
     
     try {
-        const response = await fetch(`${API_BASE_URL}/modules/${moduleId}/complete`, {
+        const response = await fetch(`${API_BASE_URL2}/modules/${moduleId}/complete`, {
             method: 'PATCH',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -932,7 +942,7 @@ async function toggleBookmark(courseId, buttonElement, event) {
     if (modalButton) updateBookmarkButton(modalButton, newBookmarkState);
 
     try {
-        const response = await fetch(`${API_BASE_URL}/bookmarks/${courseId}`, {
+        const response = await fetch(`${API_BASE_URL2}/bookmarks/${courseId}`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1005,15 +1015,21 @@ async function showCourseModal(courseId) {
     const token = localStorage.getItem('accessToken');
 
     try {
-        const response = await fetch(`${API_BASE_URL}/courses/${courseId}`);
+        const response = await fetch(`${API_BASE_URL2}/courses/${courseId}`);
         if (!response.ok) throw new Error('Failed to get the course detail');
         
-        const course = await response.json();
+        const result = await response.json();
+        const course = result.data;
+
+        if (!course) { 
+             throw new Error('Course data not found in response.');
+        }
         
         document.getElementById('modalCourseTitle').textContent = course.title;
         document.getElementById('modalCourseInstructor').textContent = course.instructor;
         document.getElementById('modalCourseDescription').textContent = course.description;
-        document.getElementById('modalCoursePrice').textContent = `$ ${course.price.toLocaleString('id-ID')}`;
+        document.getElementById('modalCoursePrice').textContent = `$ ${course.price.toLocaleString('id-ID')}`; // Sekarang ini akan berhasil
+        
         const topicsContainer = document.getElementById('modalCourseTopics');
         topicsContainer.innerHTML = '';
         if (course.topics && course.topics.length > 0) {
@@ -1024,23 +1040,15 @@ async function showCourseModal(courseId) {
                 topicsContainer.appendChild(topicTag);
             });
         }
-        document.getElementById('modalCourseModules').textContent = course.modules.length;
+        
+        document.getElementById('modalCourseModules').textContent = course.total_modules || 0; 
+        
         const moduleListContainer = document.getElementById('modalModuleListContainer');
         moduleListContainer.innerHTML = '';
-        if (course.modules && course.modules.length > 0) {
-            const moduleList = document.createElement('ul');
-            moduleList.className = 'modal-module-list';
-            course.modules.forEach(module => {
-                const listItem = document.createElement('li');
-                listItem.textContent = `${module.order}. ${module.title}`;
-                moduleList.appendChild(listItem);
-            });
-            moduleListContainer.appendChild(moduleList);
-        }
+
+
         const modalImage = document.getElementById('modalCourseImage');
-        const imageUrl = course.thumbnailImage 
-            ? `${API_BASE_URL}${course.thumbnailImage}` 
-            : '../assets/placeholder.jpeg';
+        const imageUrl = course.thumbnailImage || '../assets/placeholder.jpeg';
         modalImage.style.backgroundImage = `url(${imageUrl})`;
 
         const buyButton = document.getElementById('buyNowBtn');
@@ -1055,13 +1063,13 @@ async function showCourseModal(courseId) {
             loginNotice.style.display = 'none';
             buyButton.style.display = 'block';
         } else if (token) {
-            const myCoursesResponse = await fetch(`${API_BASE_URL}/courses/user/my-courses`, {
+            const myCoursesResponse = await fetch(`${API_BASE_URL2}/courses/my-courses`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-
             let isPurchased = false;
             if (myCoursesResponse.ok) {
-                const myCourses = await myCoursesResponse.json();
+                const myCoursesResult = await myCoursesResponse.json();
+                const myCourses = myCoursesResult.data; 
                 if (Array.isArray(myCourses)) {
                     isPurchased = myCourses.some(c => c.id === courseId);
                 }
@@ -1086,18 +1094,6 @@ async function showCourseModal(courseId) {
             loginNotice.style.display = 'block';
         }
 
-        const modalBookmarkBtn = document.createElement('button');
-        modalBookmarkBtn.className = `modal-bookmark-btn ${userBookmarks.has(courseId) ? 'bookmarked' : ''}`;
-        modalBookmarkBtn.onclick = (event) => {
-            event.stopPropagation();
-            toggleBookmark(courseId, modalBookmarkBtn, event);
-        };
-        modalBookmarkBtn.innerHTML = `<i class="${userBookmarks.has(courseId) ? 'fas' : 'far'} fa-bookmark"></i>`;
-        modalBookmarkBtn.title = userBookmarks.has(courseId) ? 'Remove from bookmarks' : 'Add to bookmarks';
-
-        const closeBtn = document.getElementById('closeModal');
-        closeBtn.parentNode.insertBefore(modalBookmarkBtn, closeBtn);
-
         const existingModalBookmarkBtn = document.querySelector('.modal-bookmark-btn');
         if (existingModalBookmarkBtn) {
             existingModalBookmarkBtn.remove();
@@ -1106,9 +1102,9 @@ async function showCourseModal(courseId) {
         if (!isMyCoursesPage) {
             const modalBookmarkBtn = document.createElement('button');
             modalBookmarkBtn.className = `modal-bookmark-btn ${userBookmarks.has(courseId) ? 'bookmarked' : ''}`;
-            modalBookmarkBtn.onclick = () => {
-                const cardButton = document.querySelector(`.course-card[data-course-id="${courseId}"] .bookmark-btn`);
-                toggleBookmark(courseId, cardButton, modalBookmarkBtn);
+            modalBookmarkBtn.onclick = (event) => {
+                event.stopPropagation();
+                toggleBookmark(courseId, modalBookmarkBtn, event);
             };
             modalBookmarkBtn.innerHTML = `<i class="${userBookmarks.has(courseId) ? 'fas' : 'far'} fa-bookmark"></i>`;
             modalBookmarkBtn.title = userBookmarks.has(courseId) ? 'Remove from bookmarks' : 'Add to bookmarks';
@@ -1145,9 +1141,12 @@ async function handleBuyCourse(courseId) {
         alert('You have to login to buy a course.');
         return;
     }
-
-    const courseResponse = await fetch(`${API_BASE_URL}/courses/${courseId}`);
-    const course = await courseResponse.json();
+    const courseResponse = await fetch(`${API_BASE_URL2}/courses/${courseId}`);
+    if (!courseResponse.ok) {
+        alert("Could not get course details.");
+        return;
+    }
+    const course = (await courseResponse.json()).data;
 
     const confirmModal = document.getElementById('confirmBuyModal');
     const confirmText = document.getElementById('confirmBuyText');
@@ -1155,41 +1154,30 @@ async function handleBuyCourse(courseId) {
     const cancelBtn = document.getElementById('cancelBuyBtn');
     const closeConfirmBtn = document.getElementById('closeConfirmBtn');
 
-    confirmText.textContent = `Are you sure to buy "${course.title}"?`;
+    confirmText.textContent = `Are you sure you want to buy "${course.title}"?`;
     confirmModal.style.display = 'flex';
 
-    const userConfirmation = new Promise((resolve) => {
-        confirmBtn.onclick = () => {
-            confirmModal.style.display = 'none';
-            resolve(true);
-        };
-        cancelBtn.onclick = () => {
-            confirmModal.style.display = 'none';
-            resolve(false);
-        };
-        closeConfirmBtn.onclick = () => {
-            confirmModal.style.display = 'none';
-            resolve(false);
-        };
+    const isConfirmed = await new Promise((resolve) => {
+        confirmBtn.onclick = () => resolve(true);
+        cancelBtn.onclick = () => resolve(false);
+        closeConfirmBtn.onclick = () => resolve(false);
     });
 
-    const isConfirmed = await userConfirmation;
+    confirmModal.style.display = 'none';
+
     if (!isConfirmed) {
         return;
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/courses/${courseId}/buy`, {
+        const response = await fetch(`${API_BASE_URL2}/courses/${courseId}/buy`, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${token}` }
         });
 
         const result = await response.json();
         if (!response.ok) {
-            throw new Error(result.message || 'Pembelian gagal. Cek saldo Anda.');
+            throw new Error(result.message || 'Purchase failed. Please check your balance.');
         }
 
         const successModal = document.getElementById('successModal');
@@ -1197,14 +1185,21 @@ async function handleBuyCourse(courseId) {
         successModal.style.display = 'flex';
         successOkBtn.onclick = () => {
             successModal.style.display = 'none';
+            closeModal();
+            loadUserData();
+            loadCourses(currentPage, currentLimit, '', false, `&timestamp=${new Date().getTime()}`); 
         };
-
-        closeModal();
-        loadUserData();
-        loadCourses(); 
         
     } catch (error) {
-        alert(`Error: ${error.message}`);
+        const errorModal = document.getElementById('errorModal');
+        const errorModalText = document.getElementById('errorModalText');
+        const errorOkBtn = document.getElementById('errorOkBtn');
+        
+        errorModalText.textContent = error.message;
+        errorModal.style.display = 'flex';
+        errorOkBtn.onclick = () => {
+            errorModal.style.display = 'none';
+        };
     }
 }
 

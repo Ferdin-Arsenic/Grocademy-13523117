@@ -41,7 +41,16 @@ export class UsersService {
     const totalItems = await this.prisma.user.count({ where: whereCondition });
 
     return {
-      data: users,
+      status: "success",
+      message: "Users retrieved successfully",
+      data: users.map(user => ({
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          first_name: user.firstName,
+          last_name: user.lastName,
+          balance: user.balance
+      })),
       pagination: {
         current_page: page,
         total_pages: Math.ceil(totalItems / limit),
@@ -100,7 +109,7 @@ export class UsersService {
       where: { id },
       data: {
         balance: {
-          increment: addBalanceDto.amount,
+          increment: addBalanceDto.increment,
         },
       },
       select: {
@@ -109,6 +118,10 @@ export class UsersService {
         balance: true,
       },
     });
-    return updatedUser
+    return {
+        status: "success",
+        message: "Balance added successfully",
+        data: updatedUser
+    }
   }
 }
